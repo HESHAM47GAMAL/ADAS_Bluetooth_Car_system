@@ -16,9 +16,6 @@
 /**************************                   Function Prototype                   **************************/
 
 
-#define ACCS_Keep_Speed                   0
-#define ACCS_Decrease_Speed_2             2
-#define ACCS_Decrease_Speed_4             4
 
 /*
 *   @brief : this function used to handle All action may happen In N GearBox mode

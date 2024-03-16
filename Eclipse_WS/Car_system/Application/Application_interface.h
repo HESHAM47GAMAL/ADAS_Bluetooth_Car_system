@@ -34,8 +34,6 @@
 #define Buzzer_PIN              PIN6_ID
 
 
-#define Accelerate_BTN_PORT         PORTD_ID
-#define Accelerate_BTN_PIN          PIN7_ID
 
 #define Braking_BTN_PORT            PORTD_ID
 #define Braking_BTN_PIN             PIN3_ID
@@ -46,14 +44,11 @@
 #define GearBox_BTN_PORT            PORTD_ID
 #define GearBox_BTN_PIN             PIN6_ID
 
-#define Blue_LED_PORT               PORTA_ID
-#define BLUE_LED_PIN                PIN5_ID
 
 #define Red_LED_PORT                PORTB_ID
 #define Red_LED_PIN                 PIN7_ID
 
-#define Green_LED_PORT              PORTA_ID
-#define Green_LED_PIN               PIN4_ID
+
 
 #define Yellow_LED_PORT             PORTA_ID
 #define Yellow_LED_PIN              PIN6_ID
