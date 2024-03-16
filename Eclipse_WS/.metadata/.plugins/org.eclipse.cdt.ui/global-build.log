@@ -1,0 +1,39 @@
+12:16:03 **** Incremental Build of configuration Debug for project Car_system ****
+make all 
+Building file: ../Application/Application_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
+../Application/Application_program.c: In function 'Buttons_Update':
+../Application/Application_program.c:288: warning: value computed is not used
+../Application/Application_program.c: In function 'ACCS_CatchDistance':
+../Application/Application_program.c:536: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+Finished building: ../Application/Application_program.c
+ 
+Building target: Car_system.elf
+Invoking: AVR C Linker
+avr-gcc -Wl,-Map,Car_system.map -mmcu=atmega16 -o "Car_system.elf"  ./MCAL/TIMER0/TIMER0_config.o ./MCAL/TIMER0/TIMER0_program.o  ./MCAL/GPIO/GPIO_program.o  ./MCAL/EXT_INT/EXT_INT_program.o  ./MCAL/ADC/ADC_config.o ./MCAL/ADC/ADC_program.o  ./HAL/Potentiometer/POT_program.o  ./HAL/LED/LED_program.o  ./HAL/LCD/LCD_program.o  ./HAL/Buzzer/Buzzer_program.o  ./HAL/BUTTON/BUTTON_program.o  ./Application/Application_program.o  ./main.o   
+Finished building target: Car_system.elf
+ 
+Invoking: AVR Create Extended Listing
+avr-objdump -h -S Car_system.elf  >"Car_system.lss"
+Finished building: Car_system.lss
+ 
+Create Flash image (ihex format)
+avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex Car_system.elf  "Car_system.hex"
+Finished building: Car_system.hex
+ 
+Invoking: Print Size
+avr-size --format=avr --mcu=atmega16 Car_system.elf
+AVR Memory Usage
+----------------
+Device: atmega16
+
+Program:   17576 bytes (107.3% Full)
+(.text + .data + .bootloader)
+
+Data:        385 bytes (37.6% Full)
+(.data + .bss + .noinit)
+
+
+Finished building: sizedummy
+ 
