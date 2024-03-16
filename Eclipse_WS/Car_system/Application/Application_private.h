@@ -51,14 +51,6 @@ static void Hanndle_GrearBox_D_State(void);
 
 
 
-/*
-*   @brief : this function used to initialize what will be displayed in DashBoard(LCD) 
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
-// static void DashBoard_Init(void);
 
 
 /*
@@ -70,6 +62,14 @@ static void Hanndle_GrearBox_D_State(void);
 */
 static void Buttons_Update(void);
 
+/*
+*   @brief : this function used to initialize what will be displayed in DashBoard(LCD) 
+*   @args  void
+*   @return: no return
+*   @synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+ static void DashBoard_Init(void);
 
 /*
 *   @brief : this function used to to Update only state of GearBox in DashBoard
@@ -78,7 +78,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-// static void DashBoard_Update_GearBox_state(uint8 GearBox_state);
+ static void DashBoard_Update_GearBox_state(uint8 GearBox_state);
 
 
 /*
@@ -88,7 +88,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-// static void DashBoard_Update_ACCS_State(uint8 ACCS_state);
+ static void DashBoard_Update_ACCS_State(uint8 ACCS_state);
 
 
 /*
@@ -98,7 +98,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-// static void DashBoard_DistanceShow(void); 
+ static void DashBoard_DistanceShow(void); 
 
 
 /*
@@ -108,7 +108,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-// static void DashBoard_DistanceHide(void);
+ static void DashBoard_DistanceHide(void);
 
 
 
@@ -166,9 +166,9 @@ static void ACCS_PID(uint8 braking_value);
 
 
 /*  For Small LCD */
-static void DashBoard_Init_small(void);
-static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
-static void DashBoard_Update_ACCS_State_small(uint8 ACCS_state);
-static void DashBoard_DistanceShow_small(void);
-static void DashBoard_DistanceHide_small(void);
-static void DashBoard_UpdateSpeed(void);
+// static void DashBoard_Init_small(void);
+// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
+// static void DashBoard_Update_ACCS_State_small(uint8 ACCS_state);
+// static void DashBoard_DistanceShow_small(void);
+// static void DashBoard_DistanceHide_small(void);
+// static void DashBoard_UpdateSpeed(void);
