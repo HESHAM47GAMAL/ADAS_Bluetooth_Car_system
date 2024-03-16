@@ -60,6 +60,9 @@
 #define YES_Condition               LOGIC_HIGH
 #define NO_Condition                LOGIC_LOW
 
+
+
+
 /*
 *   @brief : this function used to initailize what will displayed in LCD and configure Buttons and Leds 
 *   @args  void

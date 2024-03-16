@@ -1,21 +1,21 @@
-14:15:40 **** Incremental Build of configuration Debug for project Car_system ****
+22:31:37 **** Incremental Build of configuration Debug for project Car_system ****
 make all 
 Building file: ../Application/Application_program.c
 Invoking: AVR Compiler
 avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
 ../Application/Application_program.c: In function 'ACCS_CatchDistance':
-../Application/Application_program.c:440: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:481: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: At top level:
-../Application/Application_program.c:422: warning: 'ACCS_CatchDistance' defined but not used
-../Application/Application_program.c:447: warning: 'ACCS_DicisionTake' defined but not used
-../Application/Application_private.h:164: warning: 'ACCS_PID' declared 'static' but never defined
-../Application/Application_program.c:37: warning: 'Car_Speed' defined but not used
+../Application/Application_program.c:138: warning: 'Hanndle_GrearBox_N_State' defined but not used
+../Application/Application_program.c:160: warning: 'Hanndle_GrearBox_R_State' defined but not used
+../Application/Application_program.c:125: warning: 'Hanndle_GrearBox_D_State' defined but not used
+../Application/Application_program.c:184: warning: 'Buttons_Update' defined but not used
+../Application/Application_program.c:351: warning: 'DashBoard_Handle_Page' defined but not used
+../Application/Application_program.c:463: warning: 'ACCS_CatchDistance' defined but not used
+../Application/Application_program.c:488: warning: 'ACCS_DicisionTake' defined but not used
+../Application/Application_private.h:168: warning: 'ACCS_PID' declared 'static' but never defined
+../Application/Application_program.c:50: warning: 'Car_Speed' defined but not used
 Finished building: ../Application/Application_program.c
- 
-Building file: ../main.c
-Invoking: AVR Compiler
-avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"main.d" -MT"main.o" -c -o "main.o" "../main.c"
-Finished building: ../main.c
  
 Building target: Car_system.elf
 Invoking: AVR C Linker
@@ -36,15 +36,15 @@ AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   16824 bytes (102.7% Full)
+Program:   16958 bytes (103.5% Full)
 (.text + .data + .bootloader)
 
-Data:        425 bytes (41.5% Full)
+Data:        461 bytes (45.0% Full)
 (.data + .bss + .noinit)
 
 
 Finished building: sizedummy
  
 
-14:15:40 Build Finished. 0 errors, 5 warnings. (took 810ms)
+22:31:38 Build Finished. 0 errors, 10 warnings. (took 788ms)
 

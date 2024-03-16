@@ -13,6 +13,9 @@
 /**************************                   INCLUDES                   **************************/
 #include "../SERVICE/STD_TYPES.h"
 
+
+
+
 /**************************                   Function Prototype                   **************************/
 
 
@@ -107,6 +110,10 @@ static void Buttons_Update(void);
 */
  static void DashBoard_DistanceHide(void);
 
+
+
+
+ static void DashBoard_Handle_Page(void);
 
 
 /*

@@ -18,19 +18,32 @@
 #include "Application_private.h"
 #include "../SERVICE/IVT.h"
 
+/**************************                   Extern variables                   **************************/
+extern uint8 LCD_Page_Not_Selected [] ;
+extern uint8 LCD_Page_Selected [] ;
+extern uint8 LCD_Right_ICON [] ;
+extern uint8 LCD_False_ICON [] ;
 
+
+#define POS_LCD_Page_Not_Selected               LCD_CGRAM_LOCATION_1
+#define POS_LCD_Page_Selected                   LCD_CGRAM_LOCATION_2
+#define POS_LCD_Right_ICON                      LCD_CGRAM_LOCATION_3
+#define POS_LCD_False_ICON                      LCD_CGRAM_LOCATION_4
 
 
 
 /**************************                   Type Declaration                    **************************/
 enum GearBox_State {N_GearBox,D_GearBox,R_GearBox , GearBox_Return_to_N};
 enum ACCS_State {ACCS_Disable,ACCS_Enable};
+/*  🙆‍♂️Note I start with page 2  that has main parameter     */
+enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD };
 
 
 /**************************                   Global variable                   **************************/
 
 uint8 GearBox_Current_State = N_GearBox; /* Carry current state of GearBox*/
 uint8 ACCS_Currnet_state = ACCS_Disable; /* Carry Current dtate of ACCS and Note that it will take in consideration when GearBox_State == D*/
+uint8 Page_Current_State = Page_2_LCD;
 volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
 /*  Should be signed as If press brake in N mode will decrease -2 and if data type uint8 so when decrease will happen underflow and if value equal Zero at first so will be 254 so program will have bug*/
@@ -47,6 +60,12 @@ void App_Init(void)
 
     /*  Intialize LCD   */
     LCD_init();
+
+    /*  Initalize New custom character */
+    LCD_GenerateCharacterCGRAM(LCD_Page_Not_Selected,POS_LCD_Page_Not_Selected);
+    LCD_GenerateCharacterCGRAM(LCD_Page_Selected,POS_LCD_Page_Selected);
+    LCD_GenerateCharacterCGRAM(LCD_Right_ICON,POS_LCD_Right_ICON);
+    LCD_GenerateCharacterCGRAM(LCD_False_ICON,POS_LCD_False_ICON);
 
     /*  Initialize Buzzer */
     Buzzer_Init(Buzzer_PORT,Buzzer_PIN);
@@ -93,10 +112,12 @@ void App_Init(void)
 
 void StateMachineUpdate(void)
 {
-    Hanndle_GrearBox_N_State();
-    Hanndle_GrearBox_D_State();
-    Hanndle_GrearBox_R_State();
-    Buttons_Update();
+    // Hanndle_GrearBox_N_State();
+    // Hanndle_GrearBox_D_State();
+    // Hanndle_GrearBox_R_State();
+    // Buttons_Update();
+
+
 }
 
 
@@ -270,11 +291,24 @@ static void DashBoard_Init(void)
 
     /*  Display speed */
     LCD_MoveCursor(1,0);
-    LCD_DisplayString((const uint8 * )"Speed : 0");
+    LCD_DisplayString((const uint8 * )"Speed : 0 KM");
 
     /*  Display state of Adaptive Cruise control  */
     LCD_MoveCursor(2,0);
-    LCD_DisplayString((const uint8 * )"ACCS(ON,OFF) : OFF");
+    LCD_DisplayString((const uint8 * )"CC : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+    LCD_DisplayString((const uint8 * )" BA : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+    LCD_DisplayString((const uint8 * )" SL : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+    /*  Display pages in LCD as I currently in page 2 */
+    LCD_MoveCursor(3,9);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
 
 }
 
@@ -311,6 +345,13 @@ static void DashBoard_DistanceHide(void)
     LCD_MoveCursor(3,0);
     LCD_DisplayString((const uint8 * )"                    ");
 }
+
+
+static void DashBoard_Handle_Page(void)
+{
+    
+}
+
 
 
 static void Braking_Button_Handling(void)
