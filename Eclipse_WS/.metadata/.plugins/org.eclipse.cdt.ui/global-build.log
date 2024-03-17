@@ -1,23 +1,27 @@
-06:33:47 **** Incremental Build of configuration Debug for project Car_system ****
+08:09:00 **** Incremental Build of configuration Debug for project Car_system ****
 make all 
 Building file: ../Application/Application_program.c
 Invoking: AVR Compiler
 avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
+../Application/Application_program.c: In function 'APP_KeypadUpdate':
+../Application/Application_program.c:234: warning: unused variable 'SpeedLimit_Dec'
+../Application/Application_program.c:232: warning: unused variable 'SpeedLimit_Inc'
+../Application/Application_program.c:230: warning: unused variable 'SpeedLimit_ON_OFF'
 ../Application/Application_program.c: In function 'ACCS_CatchDistance':
-../Application/Application_program.c:664: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:666: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: At top level:
-../Application/Application_program.c:387: warning: 'Hanndle_GrearBox_N_State' defined but not used
-../Application/Application_program.c:409: warning: 'Hanndle_GrearBox_R_State' defined but not used
-../Application/Application_program.c:374: warning: 'Hanndle_GrearBox_D_State' defined but not used
-../Application/Application_private.h:70: warning: 'Buttons_Update' declared 'static' but never defined
-../Application/Application_program.c:176: warning: 'DashBoard_DistanceShow' defined but not used
-../Application/Application_program.c:534: warning: 'DashBoard_Handle_Page' defined but not used
-../Application/Application_program.c:646: warning: 'ACCS_CatchDistance' defined but not used
-../Application/Application_program.c:671: warning: 'ACCS_DicisionTake' defined but not used
-../Application/Application_private.h:175: warning: 'ACCS_PID' declared 'static' but never defined
+../Application/Application_program.c:383: warning: 'Hanndle_GrearBox_D_State' defined but not used
+../Application/Application_private.h:75: warning: 'Buttons_Update' declared 'static' but never defined
+../Application/Application_program.c:179: warning: 'DashBoard_DistanceShow' defined but not used
+../Application/Application_program.c:186: warning: 'DashBoard_DistanceHide' defined but not used
+../Application/Application_program.c:539: warning: 'DashBoard_Handle_Page' defined but not used
+../Application/Application_program.c:648: warning: 'ACCS_CatchDistance' defined but not used
+../Application/Application_program.c:673: warning: 'ACCS_DicisionTake' defined but not used
+../Application/Application_private.h:180: warning: 'ACCS_PID' declared 'static' but never defined
 ../Application/Application_program.c:50: warning: 'Car_Speed' defined but not used
-../Application/Application_program.c:144: warning: 'DashBoard_Update_GearBox_state' defined but not used
-../Application/Application_program.c:190: warning: 'APP_DashBoardPage_update' defined but not used
+../Application/Application_program.c:747: warning: 'DashBoard_Init_small' defined but not used
+../Application/Application_program.c:768: warning: 'DashBoard_Update_GearBox_state_small' defined but not used
+../Application/Application_program.c:793: warning: 'APP_DashBoardPage_update_small' defined but not used
 Finished building: ../Application/Application_program.c
  
 Building target: Car_system.elf
@@ -39,10 +43,10 @@ AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   18040 bytes (110.1% Full)
+Program:   18198 bytes (111.1% Full)
 (.text + .data + .bootloader)
 
-Data:        439 bytes (42.9% Full)
+Data:        496 bytes (48.4% Full)
 (.data + .bss + .noinit)
 
 

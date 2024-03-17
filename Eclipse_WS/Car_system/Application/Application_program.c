@@ -52,6 +52,9 @@ static sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
 static volatile uint8 Global_Braking_BTN_State = BTN_Released_State ;
 
 
+static volatile uint8 Global_Speed_Limiter_value = 40 ; /*  Set intail value 40 as no limit speed under 40 KM/h*/
+
+
 
 
 void App_Init(void)
@@ -103,40 +106,40 @@ void App_Init(void)
     Keypad_init();
 
     /*  Intialize Bash Board for Car*/
-    //DashBoard_Init();
+    DashBoard_Init();
     /*✍️LCD_SMALL_LARGE*/
-    DashBoard_Init_small();
+    //DashBoard_Init_small();
 }
 
 
-// static void DashBoard_Init(void)
-// {
-//     /*  Display GearBox Current state  */
-//     LCD_MoveCursor(0,0);
-//     LCD_DisplayString((const uint8 * )"GearBox(N,D,R) : N");
+static void DashBoard_Init(void)
+{
+    /*  Display GearBox Current state  */
+    LCD_MoveCursor(0,0);
+    LCD_DisplayString((const uint8 * )"GearBox(N,D,R) : N");
 
-//     /*  Display speed */
-//     LCD_MoveCursor(1,0);
-//     LCD_DisplayString((const uint8 * )"Speed : 0 KM");
+    /*  Display speed */
+    LCD_MoveCursor(1,0);
+    LCD_DisplayString((const uint8 * )"Speed : 0 KM");
 
-//     /*  Display state of Adaptive Cruise control  */
-//     LCD_MoveCursor(2,0);
-//     LCD_DisplayString((const uint8 * )"CC : ");
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+    /*  Display state of Adaptive Cruise control  */
+    LCD_MoveCursor(2,0);
+    LCD_DisplayString((const uint8 * )"CC : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
 
-//     LCD_DisplayString((const uint8 * )" BA : ");
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+    LCD_DisplayString((const uint8 * )" BA : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
 
-//     LCD_DisplayString((const uint8 * )" SL : ");
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+    LCD_DisplayString((const uint8 * )" SL : ");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
 
-//     /*  Display pages in LCD as I currently in page 2 */
-//     LCD_MoveCursor(3,9);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+    /*  Display pages in LCD as I currently in page 2 */
+    LCD_MoveCursor(3,9);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
 
-// }
+}
 
 
 
@@ -157,9 +160,9 @@ static void DashBoard_Update_CCS_State(uint8 ACCS_state)
     {
         
         /*  Go to index that display current GearBox state*/
-        //LCD_MoveCursor(2,4);
+        LCD_MoveCursor(2,5);
         /*✍️LCD_SMALL_LARGE*/
-        LCD_MoveCursor(0,4);
+        //LCD_MoveCursor(0,4);
         /*  Edit its state with new state given to function*/
         if(CCS_Currnet_state == CCS_Enable)
         {
@@ -202,9 +205,9 @@ static void APP_DashBoardPage_update(void)
 
 void StateMachineUpdate(void)
 {
-    // Hanndle_GrearBox_N_State();
+    Hanndle_GrearBox_N_State();
     // Hanndle_GrearBox_D_State();
-    // Hanndle_GrearBox_R_State();
+    Hanndle_GrearBox_R_State();
     // Buttons_Update();
 
     APP_KeypadUpdate();
@@ -224,14 +227,20 @@ static void APP_KeypadUpdate(void)
 
     static uint8 L_Page_IsStillPressed = NO_Condition;
 
+    static uint8 SpeedLimit_ON_OFF = NO_Condition ;
+
+    static uint8 SpeedLimit_Inc = NO_Condition ;
+
+    static uint8 SpeedLimit_Dec = NO_Condition ;
+
     volatile sint8 local_currentValue_keypad = Keypad_GetPressedKey();/* Take last keypad pressed button */
     /*  This if used to see only value of button pressed in Keypad  */
     if(local_currentValue_keypad >= 0 )
     {
             
-        //LCD_MoveCursor(3,0);
+        LCD_MoveCursor(3,0);
         /*✍️LCD_SMALL_LARGE*/
-        LCD_MoveCursor(1,0);
+        //LCD_MoveCursor(1,0);
         LCD_DisplayCharacter((local_currentValue_keypad + '0'));
 
     }
@@ -240,8 +249,8 @@ static void APP_KeypadUpdate(void)
 
     /*  Handle GearBox Button   */
     /*  GearBox switch only happen when press on gearbox and brake button in same time  */
-    if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
-    // if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
+    // if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
+    if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
     {
         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
         if(GearBox_IsStillPressed == NO_Condition)
@@ -259,9 +268,9 @@ static void APP_KeypadUpdate(void)
             }
 
             /*  call function to update gearbox state in Dashboard*/
-            //DashBoard_Update_GearBox_state(GearBox_Current_State);
+            DashBoard_Update_GearBox_state(GearBox_Current_State);
             /*✍️LCD_SMALL_LARGE*/
-            DashBoard_Update_GearBox_state_small(GearBox_Current_State);
+            //DashBoard_Update_GearBox_state_small(GearBox_Current_State);
         }
         
     }
@@ -331,9 +340,9 @@ static void APP_KeypadUpdate(void)
                 Page_Current_State = Page_1_LCD ;
             }
             /*  Call function that will handle display in LCD*/
-            // APP_DashBoardPage_update();
+            APP_DashBoardPage_update();
             /*✍️LCD_SMALL_LARGE*/
-            APP_DashBoardPage_update_small();
+            //APP_DashBoardPage_update_small();
         }
     }
     else 
@@ -354,9 +363,9 @@ static void APP_KeypadUpdate(void)
                 Page_Current_State = Page_3_LCD ;
             }
             /*  Call function that will handle display in LCD*/
-            // APP_DashBoardPage_update();
+            APP_DashBoardPage_update();
             /*✍️LCD_SMALL_LARGE*/
-            APP_DashBoardPage_update_small();
+            // APP_DashBoardPage_update_small();
         }
     }
     else 
@@ -393,10 +402,8 @@ static void Hanndle_GrearBox_N_State(void)
             CCS_Currnet_state = CCS_Disable;
             /*  Update LCD with new change*/
             DashBoard_Update_CCS_State(CCS_Currnet_state);
-            /*  Initailize for small LCD*/
-            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
             
-            DashBoard_DistanceHide();
+            //DashBoard_DistanceHide();
            // DashBoard_DistanceHide_small();
 
         }
@@ -410,7 +417,7 @@ static void Hanndle_GrearBox_R_State(void)
     if(GearBox_Current_State == R_GearBox)
     {
         /*  Turn off led that work in Adaptive cruise control  as may make switch by gearBox so I need to handle this   */
-        LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+        //LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
         if(CCS_Currnet_state == CCS_Enable)
         {
             /*  Disable ACCS if Enabled  */
@@ -418,10 +425,8 @@ static void Hanndle_GrearBox_R_State(void)
 
             /*  Update LCD with new change*/
             DashBoard_Update_CCS_State(CCS_Currnet_state);
-            /*  Initailize for small LCD*/
-            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
             
-            DashBoard_DistanceHide();
+            //DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();
         }
     }
@@ -605,11 +610,8 @@ void tessst (void)
             LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
         
 
-
             /*  Update LCD with new change*/
             DashBoard_Update_CCS_State(CCS_Currnet_state);
-            /*✍️LCD_SMALL_LARGE*/
-            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
 
             // DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();

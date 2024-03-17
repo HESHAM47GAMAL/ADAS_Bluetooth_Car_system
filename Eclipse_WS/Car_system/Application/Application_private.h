@@ -21,7 +21,12 @@
 #define Keypad_Page_R_pressed_value             3
 #define Keypad_Page_L_pressed_value             1
 #define Keypad_CCS_pressed_value                0
+#define Keypad_SpeedLimit_Dec_pressed_value     7
+#define Keypad_SpeedLimit_ON_OFF_pressed_value  8
+#define Keypad_SpeedLimit_Inc_pressed_value     9
 
+
+#define MAX_CAR_SPEED                           200 
 
 /**************************                   Function Prototype                   **************************/
 
@@ -76,7 +81,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-//  static void DashBoard_Init(void);
+ static void DashBoard_Init(void);
 
 /*
 *   @brief : this function used to to Update only state of GearBox in DashBoard
@@ -85,7 +90,7 @@ static void Buttons_Update(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-//  static void DashBoard_Update_GearBox_state(uint8 GearBox_state);
+ static void DashBoard_Update_GearBox_state(uint8 GearBox_state);
 
 
 /*
@@ -177,15 +182,15 @@ static void ACCS_PID(uint8 braking_value);
 
 static void APP_KeypadUpdate(void);
 
-// static void APP_DashBoardPage_update(void);
+static void APP_DashBoardPage_update(void);
 
 
 
 /*  For Small LCD */
-static void DashBoard_Init_small(void);
-static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
+// static void DashBoard_Init_small(void);
+// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
 // static void DashBoard_DistanceShow_small(void);
 // static void DashBoard_DistanceHide_small(void);
 // static void DashBoard_UpdateSpeed(void);
+// static void APP_DashBoardPage_update_small(void);
 
-static void APP_DashBoardPage_update_small(void);
