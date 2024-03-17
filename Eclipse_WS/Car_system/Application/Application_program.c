@@ -35,6 +35,7 @@ extern uint8 LCD_False_ICON [] ;
 /**************************                   Type Declaration                    **************************/
 enum GearBox_State {N_GearBox,D_GearBox,R_GearBox , GearBox_Return_to_N};
 enum CCS_State {CCS_Disable,CCS_Enable};
+enum SpeedLimit_State {SpeedLimit_Disable , SpeedLimit_Enable};
 /*  🙆‍♂️Note I start with page 2  that has main parameter     */
 enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD };
 
@@ -44,10 +45,11 @@ enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD };
 uint8 GearBox_Current_State = N_GearBox; /* Carry current state of GearBox*/
 uint8 CCS_Currnet_state = CCS_Disable; /* Carry Current dtate of ACCS and Note that it will take in consideration when GearBox_State == D*/
 sint8 Page_Current_State = Page_2_LCD; /*   -128 :127*/
+uint8 SpeedLimit_Current__State = SpeedLimit_Disable ;
 volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
 /*  Should be signed as If press brake in N mode will decrease -2 and if data type uint8 so when decrease will happen underflow and if value equal Zero at first so will be 254 so program will have bug*/
-static sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
+static volatile sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
 
 static volatile uint8 Global_Braking_BTN_State = BTN_Released_State ;
 
@@ -163,15 +165,33 @@ static void DashBoard_Update_CCS_State(uint8 ACCS_state)
         LCD_MoveCursor(2,5);
         /*✍️LCD_SMALL_LARGE*/
         //LCD_MoveCursor(0,4);
+
         /*  Edit its state with new state given to function*/
         if(CCS_Currnet_state == CCS_Enable)
-        {
             LCD_DisplayCharacter(POS_LCD_Right_ICON);
 
-        }
         else
             LCD_DisplayCharacter(POS_LCD_False_ICON);
 
+    }
+}
+
+static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
+{
+    /*  Should don't change state of CCS before that I in page 2 that has this feature  else will happen LCD data corruption    */
+    if(Page_Current_State == Page_2_LCD)
+    {
+        /*  Go to index that display current GearBox state*/
+        LCD_MoveCursor(2,19);
+        /*✍️LCD_SMALL_LARGE*/
+        //LCD_MoveCursor(0,6);
+
+        /*  Edit its state with new state given to function*/
+        if(SL_state == SpeedLimit_Enable)
+            LCD_DisplayCharacter(POS_LCD_Right_ICON);
+
+        else
+            LCD_DisplayCharacter(POS_LCD_False_ICON);
     }
 }
 
@@ -215,6 +235,24 @@ void StateMachineUpdate(void)
 }
 
 
+static void APP_DashBoard_SwitchPages(void)
+{
+    /*  Clear Screen @ first  */
+    if(Page_Current_State == Page_1_LCD)
+    {
+
+    }
+    else if(Page_Current_State == Page_2_LCD)
+    {
+
+    }
+    else if(Page_Current_State == Page_2_LCD)
+    {
+
+    }
+}
+
+
 static void APP_KeypadUpdate(void)
 {
     /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
@@ -227,11 +265,11 @@ static void APP_KeypadUpdate(void)
 
     static uint8 L_Page_IsStillPressed = NO_Condition;
 
-    static uint8 SpeedLimit_ON_OFF = NO_Condition ;
+    static uint8 SL_ON_OFFIsStillPressed = NO_Condition ;
 
-    static uint8 SpeedLimit_Inc = NO_Condition ;
+    static uint8 SL_IncIsStillPressed = NO_Condition ;
 
-    static uint8 SpeedLimit_Dec = NO_Condition ;
+    static uint8 SL_DecIsStillPressed = NO_Condition ;
 
     volatile sint8 local_currentValue_keypad = Keypad_GetPressedKey();/* Take last keypad pressed button */
     /*  This if used to see only value of button pressed in Keypad  */
@@ -244,7 +282,9 @@ static void APP_KeypadUpdate(void)
         LCD_DisplayCharacter((local_currentValue_keypad + '0'));
 
     }
-
+    LCD_MoveCursor(3,2);
+    LCD_intToString(Global_Speed_Limiter_value);
+    LCD_DisplayCharacter(' ');
 
 
     /*  Handle GearBox Button   */
@@ -326,6 +366,37 @@ static void APP_KeypadUpdate(void)
             /*  Enter this state when Button released*/
             CCS_IsStillPressed = NO_Condition ;
         }
+
+        /*  Handle Speed Limiter System Button   */
+        if(local_currentValue_keypad == Keypad_SpeedLimit_ON_OFF_pressed_value) 
+        {
+            /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
+            if(SL_ON_OFFIsStillPressed == NO_Condition)
+            {
+                SL_ON_OFFIsStillPressed = YES_Condition ;
+                /* turn buzzer on and give timer 0 clock and set timeout    */
+                Buzzer_NotifySound();
+
+                if(SpeedLimit_Current__State == SpeedLimit_Disable)
+                {
+                    /*  update State of Speed Limiter   */
+                    SpeedLimit_Current__State = SpeedLimit_Enable ;
+                    /*  Call updater for Speed limiter state */
+                    DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+                }
+                else 
+                {
+                    /*  update State of Speed Limiter   */
+                    SpeedLimit_Current__State = SpeedLimit_Disable ;
+                    /*  Call updater for Speed limiter state */   
+                    DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+                }
+            }  
+        }
+        else
+        {
+            SL_ON_OFFIsStillPressed = NO_Condition ;
+        } 
     }
 
     /*  ⚠️⚠️⚠️⚠️ I think that is critical section   */
@@ -374,6 +445,64 @@ static void APP_KeypadUpdate(void)
         L_Page_IsStillPressed = NO_Condition ;
     }
 
+    /*  Handle Increasing part for speed limiter    */
+    static uint8 SL_FirstTime_INC = YES_Condition ;
+    static uint8 SL_INC_repeation = 0 ;
+    if(local_currentValue_keypad == Keypad_SpeedLimit_Inc_pressed_value)
+    {
+        if(SL_FirstTime_INC == YES_Condition )
+        {
+            Global_Speed_Limiter_value += 5; 
+            SL_FirstTime_INC = NO_Condition ;
+        }
+        else /* Enter it when SL_FirstTime_INC = NO_Condition   */
+        {
+            SL_INC_repeation += 1;
+            if(SL_INC_repeation == 6)
+            {
+                SL_INC_repeation = 0;
+                /*   Increase Global_Speed_Limiter_value variable by 5  */
+                Global_Speed_Limiter_value += 5; 
+            }
+        }
+
+    }
+    else
+    {
+        SL_FirstTime_INC = YES_Condition ;
+        SL_INC_repeation = 0;
+
+    }
+
+
+    /*  Handle Decreasing part for speed limiter    */
+    static uint8 SL_FirstTime_DEC = YES_Condition ;
+    static uint8 SL_DEC_repeation = 0 ;
+    if(local_currentValue_keypad == Keypad_SpeedLimit_Dec_pressed_value)
+    {
+        if(SL_FirstTime_DEC == YES_Condition )
+        {
+            Global_Speed_Limiter_value -= 5; 
+            SL_FirstTime_DEC = NO_Condition ;
+        }
+        else /* Enter it when SL_FirstTime_INC = NO_Condition   */
+        {
+            SL_DEC_repeation += 1;
+            if(SL_DEC_repeation == 6)
+            {
+                SL_DEC_repeation = 0;
+                /*   Increase Global_Speed_Limiter_value variable by 5  */
+                Global_Speed_Limiter_value -= 5; 
+            }
+        }
+
+    }
+    else
+    {
+        SL_FirstTime_DEC = YES_Condition ;
+        SL_DEC_repeation = 0;
+
+    }
 
 
 }

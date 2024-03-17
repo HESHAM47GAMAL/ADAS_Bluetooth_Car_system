@@ -184,13 +184,18 @@ static void APP_KeypadUpdate(void);
 
 static void APP_DashBoardPage_update(void);
 
+static void APP_DashBoard_SwitchPages(void);
 
 
-/*  For Small LCD */
-// static void DashBoard_Init_small(void);
-// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
-// static void DashBoard_DistanceShow_small(void);
-// static void DashBoard_DistanceHide_small(void);
-// static void DashBoard_UpdateSpeed(void);
-// static void APP_DashBoardPage_update_small(void);
+static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
+
+
+
+/**************************************  For Small LCD ***********************/
+    // static void DashBoard_Init_small(void);
+    // static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
+    // static void DashBoard_DistanceShow_small(void);
+    // static void DashBoard_DistanceHide_small(void);
+    // static void DashBoard_UpdateSpeed(void);
+    // static void APP_DashBoardPage_update_small(void);
 
