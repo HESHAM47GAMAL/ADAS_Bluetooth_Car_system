@@ -17,6 +17,7 @@
 #include "Application_interface.h"
 #include "Application_private.h"
 #include "../SERVICE/IVT.h"
+#include <util/delay.h>
 
 
 
@@ -27,6 +28,13 @@ enum	E_LCD_PAGE{
 	E_LCD_PAGE_MAIN,
 	E_LCD_PAGE_RIGHT,
 	E_LCD_PAGE_LEFT
+};
+
+enum	E_GBX{
+	E_GBX_NEUTRAL,
+	E_GBX_DRIVE,
+	E_GBX_REVERSE,
+	E_GBX_RETURN_TO_N
 };
 
 
@@ -45,7 +53,10 @@ enum E_KEYPAD{
 
 /**************************                   Global variable                   **************************/
 volatile uint8 LCD_SELECT = E_LCD_PAGE_MAIN;
-uint8 volatile KEYPAD_PRESSED;
+uint8 volatile KEYPAD_PRESSED = -1;
+uint8  GBX_STATE = E_GBX_NEUTRAL;
+uint8  GBX_IS_STILL_PRESSED = NO_Condition;
+
 
 
 /**************************                   Function bodies                   **************************/
@@ -75,7 +86,7 @@ void A_APPLICATION_VOID_INIT(void){
 }
 
 /************************** LCD screen select function **************************/
-void A_APPLICATION_MAIN_LCD_SCREEN_SELECT(){
+void A_APPLICATION_VOID_MAIN_LCD_SCREEN_SELECT(){
 
 	switch (LCD_SELECT) {
 	case E_LCD_PAGE_MAIN:
@@ -97,95 +108,178 @@ void A_APPLICATION_MAIN_LCD_SCREEN_SELECT(){
 
 /************************** Keypad button read check function **************************/
 void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void){
-
-	switch (KEYPAD_PRESSED) {
-
-	case E_KEYPAD_CCS_TOG:
-
-		break;
-	case E_KEYPAD_LEFT_PAGE:
-
-		break;
-	case E_KEYPAD_GEARBOX:
-
-		break;
-	case E_KEYPAD_RIGHT_PAGE:
-
-		break;
-	case E_KEYPAD_SPEED_LIMITER_DEC:
-
-		break;
-	case E_KEYPAD_SPEED_LIMITER_TOG:
-
-		break;
-	case E_KEYPAD_SPEED_LIMITER_INC:
-
-		break;
-
-	default:	//do nothing
-		break;
-	}
-
-}
-
-
-sint8 A_APPLICATION_sint8_LCD_PAGE_UPDATE(void) {
-
 	KEYPAD_PRESSED = Keypad_GetPressedKey();
+
+	if((KEYPAD_PRESSED == E_KEYPAD_GEARBOX ))
+	{
+		A_APPLICATION_VOID_GBX_CHANGE();
+
+	}
+	else {
+		GBX_IS_STILL_PRESSED = NO_Condition;
+	}
+
+
+
+
+
+	if (KEYPAD_PRESSED == E_KEYPAD_CCS_TOG) {
+
+	}
+	else {
+
+
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_LEFT_PAGE) {
+LCD_ClearScreen();
+
+	}
+	else {
+
+
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_GEARBOX) {
+
+
+	}
+	else {
+
+
+	}
+
 	if (KEYPAD_PRESSED == E_KEYPAD_RIGHT_PAGE) {
-	static uint8 BTN_STATE;
-	BTN_STATE  = LOGIC_LOW;
-	static uint8 BTN_STILL_PRESSED = LOGIC_LOW ;
-//		if (condition) {
-
-			if(BTN_STATE == LOGIC_LOW)
-			{
-				if(BTN_STILL_PRESSED == LOGIC_LOW)
-				{
-					uint8 GearBox_Characyer [] = {'N','D','R'};
-					LCD_MoveCursor(0,17);
-					LCD_DisplayCharacter(GearBox_Characyer[0]);
-					BTN_STILL_PRESSED = LOGIC_HIGH ;
-				}
-			}
-			else
-			{
-
-				BTN_STILL_PRESSED = LOGIC_HIGH ;
-			}
-		//}
 
 
 	}
+	else {
+
+
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_DEC) {
+
+	}
+	else {
+
+
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_TOG) {
+
+		LCD_MoveCursor(2,2);
+		LCD_DisplayCharacter((KEYPAD_PRESSED + '0'));
+
+	}
+	else {
+
+
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_INC) {
+		LCD_MoveCursor(2,2);
+		LCD_DisplayCharacter((KEYPAD_PRESSED + '0'));
+
+
+	}
+	else {
+
+	}
+
+
+
+
 }
-	sint8 A_APPLICATION_sint8_LCD_PAGE_UPDATE2(void) {
 
-		KEYPAD_PRESSED = Keypad_GetPressedKey();
-		if (KEYPAD_PRESSED == E_KEYPAD_LEFT_PAGE) {
-		static uint8 BTN_STATE;
-		BTN_STATE  = LOGIC_LOW;
-		static uint8 BTN_STILL_PRESSED = LOGIC_LOW ;
-	//		if (condition) {
 
-				if(BTN_STATE == LOGIC_LOW)
-				{
-					if(BTN_STILL_PRESSED == LOGIC_LOW)
-					{
-						uint8 GearBox_Characyer [] = {'N','D','R'};
-						LCD_MoveCursor(0,17);
-						LCD_DisplayCharacter(GearBox_Characyer[1]);
-						BTN_STILL_PRESSED = LOGIC_HIGH ;
-					}
-				}
-				else
-				{
 
-					BTN_STILL_PRESSED = LOGIC_HIGH ;
-				}
-			//}
+
+void A_APPLICATION_VOID_MAIN_LCD_LOAD(void){
+	LCD_MoveCursor(3,0);
+	LCD_DisplayString((const uint8 * )"CCS");
+
+	LCD_MoveCursor(3,5);
+	LCD_DisplayString((const uint8 * )"BAS");
+
+	LCD_MoveCursor(3,10);
+	LCD_DisplayString((const uint8 * )"SL");
+
+	LCD_MoveCursor(0,9);
+	LCD_DisplayString((const uint8 * )"S: 999 Km/h");
+
+	LCD_MoveCursor(1,13);
+	LCD_DisplayString((const uint8 * )"R N D");
+
+	_delay_ms(2000);
+	LCD_ClearScreen();
+	A_APPLICATION_VOID_MAIN_LCD_STATICS();
+
+
+
+
+}
+
+
+void A_APPLICATION_VOID_MAIN_LCD_STATICS(void){
+	LCD_MoveCursor(0,9);
+	LCD_DisplayString((const uint8 * )"S:     KM/h");
+
+	LCD_MoveCursor(1,13);
+	LCD_DisplayString((const uint8 * )"R N D");
+
+}
+
+void A_APPLICATION_VOID_GBX_CHANGE(void){
+
+		if(GBX_IS_STILL_PRESSED == NO_Condition)
+		{
+			GBX_IS_STILL_PRESSED = YES_Condition ;
+
+			/*  Go to next state for gearbox*/
+			GBX_STATE++ ;
+
+			if(GBX_STATE == E_GBX_RETURN_TO_N)
+			{
+				GBX_STATE = E_GBX_NEUTRAL ;
+
+			}
+
+			/*  call function to update gearbox state in Dashboard*/
+			A_APPLICATION_VOID_GBX_DISPLAY(GBX_STATE);
+
 		}
+
+
+
+
+}
+void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state){
+	/*  Array carry All Characters For GearBox as make display easier using index*/
+//	    uint8 GearBox_chars [] = {'N','D','R'};
+//	    /*  Go to index that display current GearBox state*/
+//	    LCD_MoveCursor(3,3);
+//	    /*  Edit its state with new state given to function*/
+//	    LCD_DisplayCharacter(GearBox_chars[state]);
+
+	switch (state) {
+	case E_GBX_NEUTRAL:
+		LCD_MoveCursor(2,13);
+		LCD_DisplayString((const uint8*)"  _  ");
+		break;
+	case E_GBX_DRIVE:
+		LCD_MoveCursor(2,13);
+		LCD_DisplayString((const uint8*)"    _");
+		break;
+	case E_GBX_REVERSE:
+		LCD_MoveCursor(2,13);
+		LCD_DisplayString((const uint8*)"_    ");
+		break;
+	default:
+		break;
 	}
 
+}
 
 
 

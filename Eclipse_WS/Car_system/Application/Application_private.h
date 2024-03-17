@@ -27,6 +27,12 @@
 void A_APPLICATION_VOID_INIT(void);
 
 
+
+
+
+
+
+
 /*
 *   @ Brief : this function used to run everything withn state machine
 *   @ Arguments :   void
@@ -37,6 +43,12 @@ void A_APPLICATION_VOID_INIT(void);
 
 void StateMachineUpdate(void);
 
+
+
+
+
+
+
 /*
 *   @ Brief : this function is responsible fo which LCD screen we are on
 *   @ Arguments :   void
@@ -46,7 +58,13 @@ void StateMachineUpdate(void);
 */
 
 
-void A_APPLICATION_MAIN_LCD_SCREEN_SELECT(void);
+void A_APPLICATION_VOID_MAIN_LCD_SCREEN_SELECT(void);
+
+
+
+
+
+
 
 /*
 *   @ Brief : this function is responsible for checking which button in keypad is pressed
@@ -57,15 +75,66 @@ void A_APPLICATION_MAIN_LCD_SCREEN_SELECT(void);
 */
 void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void);
 
+
+
+
+
+
+
 /*
-*   @ Brief : this function is for changing the lcd screen
+*   @ Brief : this function is for Loading infro on lcd on first run of program
 *   @ Arguments :   void
-*   @ Returns : Returns the page number, 0 for middle, 1 for right and 2 for left
+*   @ Returns : no return
 *   @ Synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-sint8 A_APPLICATION_sint8_LCD_PAGE_UPDATE(void);
-sint8 A_APPLICATION_sint8_LCD_PAGE_UPDATE2(void);
+void A_APPLICATION_VOID_MAIN_LCD_LOAD(void);
+
+
+
+
+
+
+/*
+*   @ Brief : this function is For printing whatever wont change on all three screens
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+
+void A_APPLICATION_VOID_MAIN_LCD_STATICS(void);
+
+
+
+
+
+
+
+
+/*
+*   @ Brief : this function is For Displaying which gear on lcd
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state);
+
+
+
+
+/*
+*   @ Brief : this function is For changing the gearbox state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_GBX_CHANGE(void);
 
 
 
