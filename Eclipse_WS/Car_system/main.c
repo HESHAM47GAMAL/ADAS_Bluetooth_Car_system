@@ -11,11 +11,12 @@ uint8 Adc_value_pure = 0;
 int main()
 {
 	/*	Make Initialize for Every thing*/
-	App_Init();
+	A_APPLICATION_VOID_INIT();
 	
 	while(1)
 	{
-		StateMachineUpdate();
+		 A_APPLICATION_sint8_LCD_PAGE_UPDATE();
+		 A_APPLICATION_sint8_LCD_PAGE_UPDATE2();
 
 	}
 

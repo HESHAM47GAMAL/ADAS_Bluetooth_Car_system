@@ -15,6 +15,7 @@ RM := rm -rf
 -include HAL/Potentiometer/subdir.mk
 -include HAL/LED/subdir.mk
 -include HAL/LCD/subdir.mk
+-include HAL/KEYPAD/subdir.mk
 -include HAL/Buzzer/subdir.mk
 -include HAL/BUTTON/subdir.mk
 -include Application/subdir.mk
