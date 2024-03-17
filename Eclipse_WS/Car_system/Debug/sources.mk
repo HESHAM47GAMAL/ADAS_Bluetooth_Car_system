@@ -23,6 +23,7 @@ SUBDIRS := \
 Application \
 HAL/BUTTON \
 HAL/Buzzer \
+HAL/KEYPAD \
 HAL/LCD \
 HAL/LED \
 HAL/Potentiometer \

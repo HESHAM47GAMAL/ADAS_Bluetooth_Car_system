@@ -18,6 +18,8 @@ main.o main.o: ../main.c ../Application/Application_interface.h \
   ../Application/../HAL/Potentiometer/../../SERVICE/STD_TYPES.h \
   ../Application/../HAL/Potentiometer/POT_config.h \
   ../Application/../HAL/Potentiometer/../../MCAL/GPIO/GPIO_interface.h \
+  ../Application/../HAL/KEYPAD/Keypad_interface.h \
+  ../Application/../HAL/KEYPAD/../../SERVICE/STD_TYPES.h \
   ../Application/../MCAL/EXT_INT/EXT_INT_interface.h \
   ../Application/../MCAL/EXT_INT/../../SERVICE/STD_TYPES.h \
   ../Application/../MCAL/EXT_INT/../GPIO/GPIO_interface.h \
@@ -68,6 +70,10 @@ main.o main.o: ../main.c ../Application/Application_interface.h \
 ../Application/../HAL/Potentiometer/POT_config.h:
 
 ../Application/../HAL/Potentiometer/../../MCAL/GPIO/GPIO_interface.h:
+
+../Application/../HAL/KEYPAD/Keypad_interface.h:
+
+../Application/../HAL/KEYPAD/../../SERVICE/STD_TYPES.h:
 
 ../Application/../MCAL/EXT_INT/EXT_INT_interface.h:
 

@@ -22,6 +22,7 @@
 #include "../HAL/LCD/LCD_interface.h"
 #include "../Hal/Buzzer/Buzzer_interface.h"
 #include "../HAL/Potentiometer/POT_interface.h"
+#include "../HAL/KEYPAD/Keypad_interface.h"
 
 #include "../MCAL/EXT_INT/EXT_INT_interface.h"
 #include "../MCAL/TIMER0/TIMER0_interface.h"
@@ -38,16 +39,10 @@
 #define Braking_BTN_PORT            PORTD_ID
 #define Braking_BTN_PIN             PIN3_ID
 
-#define ACCS_BTN_PORT               PORTD_ID
-#define ACCS_BTN_PIN                PIN5_ID
-
-#define GearBox_BTN_PORT            PORTD_ID
-#define GearBox_BTN_PIN             PIN6_ID
 
 
 #define Red_LED_PORT                PORTB_ID
 #define Red_LED_PIN                 PIN7_ID
-
 
 
 #define Yellow_LED_PORT             PORTA_ID

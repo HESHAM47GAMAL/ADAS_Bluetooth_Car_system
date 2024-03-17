@@ -34,7 +34,7 @@ extern uint8 LCD_False_ICON [] ;
 
 /**************************                   Type Declaration                    **************************/
 enum GearBox_State {N_GearBox,D_GearBox,R_GearBox , GearBox_Return_to_N};
-enum ACCS_State {ACCS_Disable,ACCS_Enable};
+enum CCS_State {CCS_Disable,CCS_Enable};
 /*  🙆‍♂️Note I start with page 2  that has main parameter     */
 enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD };
 
@@ -42,14 +42,15 @@ enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD };
 /**************************                   Global variable                   **************************/
 
 uint8 GearBox_Current_State = N_GearBox; /* Carry current state of GearBox*/
-uint8 ACCS_Currnet_state = ACCS_Disable; /* Carry Current dtate of ACCS and Note that it will take in consideration when GearBox_State == D*/
-uint8 Page_Current_State = Page_2_LCD;
+uint8 CCS_Currnet_state = CCS_Disable; /* Carry Current dtate of ACCS and Note that it will take in consideration when GearBox_State == D*/
+sint8 Page_Current_State = Page_2_LCD; /*   -128 :127*/
 volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
 /*  Should be signed as If press brake in N mode will decrease -2 and if data type uint8 so when decrease will happen underflow and if value equal Zero at first so will be 254 so program will have bug*/
 static sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
 
 static volatile uint8 Global_Braking_BTN_State = BTN_Released_State ;
+
 
 
 
@@ -70,10 +71,7 @@ void App_Init(void)
     /*  Initialize Buzzer */
     Buzzer_Init(Buzzer_PORT,Buzzer_PIN);
 
-    /* Initialize Button  ACCS & GearBox    */
-    
-    BUTTON_Init(ACCS_BTN_PORT,ACCS_BTN_PIN,INPUT_PIN);
-    BUTTON_Init(GearBox_BTN_PORT,GearBox_BTN_PIN,INPUT_PIN);
+
 
     /*  Initialize Braking Button with EXT_INT 1    */
     INT1_init(FALLING_EDGE_TRIGGER,INPUT_PIN);
@@ -100,12 +98,104 @@ void App_Init(void)
 
     /*  Intialize Potentiometer */
     POT_Init(ADC_Channel_0);
-    
-    /*  Intialize Bash Board for Car*/
-    DashBoard_Init();
 
-    /*  Initailize for small LCD*/
-    //DashBoard_Init_small();
+    /*  Initailize Keypad  */
+    Keypad_init();
+
+    /*  Intialize Bash Board for Car*/
+    //DashBoard_Init();
+    /*✍️LCD_SMALL_LARGE*/
+    DashBoard_Init_small();
+}
+
+
+// static void DashBoard_Init(void)
+// {
+//     /*  Display GearBox Current state  */
+//     LCD_MoveCursor(0,0);
+//     LCD_DisplayString((const uint8 * )"GearBox(N,D,R) : N");
+
+//     /*  Display speed */
+//     LCD_MoveCursor(1,0);
+//     LCD_DisplayString((const uint8 * )"Speed : 0 KM");
+
+//     /*  Display state of Adaptive Cruise control  */
+//     LCD_MoveCursor(2,0);
+//     LCD_DisplayString((const uint8 * )"CC : ");
+//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+//     LCD_DisplayString((const uint8 * )" BA : ");
+//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+//     LCD_DisplayString((const uint8 * )" SL : ");
+//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+//     /*  Display pages in LCD as I currently in page 2 */
+//     LCD_MoveCursor(3,9);
+//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+//     LCD_DisplayCharacter(POS_LCD_Page_Selected);
+//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+
+// }
+
+
+
+static void DashBoard_Update_GearBox_state(uint8 GearBox_state)
+{
+    /*  Array carry All Characters For GearBox as make display easier using index*/
+    uint8 GearBox_Characyer [] = {'N','D','R'};
+    /*  Go to index that display current GearBox state*/
+    LCD_MoveCursor(0,17);
+    /*  Edit its state with new state given to function*/
+    LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);
+}
+
+static void DashBoard_Update_CCS_State(uint8 ACCS_state)
+{
+    /*  Should don't change state of CCS before that I in page 2 that has this feature  else will happen LCD data corruption    */
+    if(Page_Current_State == Page_2_LCD)
+    {
+        
+        /*  Go to index that display current GearBox state*/
+        //LCD_MoveCursor(2,4);
+        /*✍️LCD_SMALL_LARGE*/
+        LCD_MoveCursor(0,4);
+        /*  Edit its state with new state given to function*/
+        if(CCS_Currnet_state == CCS_Enable)
+        {
+            LCD_DisplayCharacter(POS_LCD_Right_ICON);
+
+        }
+        else
+            LCD_DisplayCharacter(POS_LCD_False_ICON);
+
+    }
+}
+
+static void DashBoard_DistanceShow(void)
+{
+    LCD_MoveCursor(3,0);
+    LCD_DisplayString((const uint8 * )"Distance : ");
+}
+
+
+static void DashBoard_DistanceHide(void)
+{
+    LCD_MoveCursor(3,0);
+    LCD_DisplayString((const uint8 * )"                    ");
+}
+
+
+static void APP_DashBoardPage_update(void)
+{
+    
+    uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
+    LCD_MoveCursor(3,9);
+    /*  Display indicator for current page  */
+    LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
+    LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
+    LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
+    
 }
 
 
@@ -117,13 +207,172 @@ void StateMachineUpdate(void)
     // Hanndle_GrearBox_R_State();
     // Buttons_Update();
 
+    APP_KeypadUpdate();
+
+}
+
+
+static void APP_KeypadUpdate(void)
+{
+    /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
+    static uint8 GearBox_IsStillPressed = NO_Condition;
+
+    /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
+    static uint8 CCS_IsStillPressed = NO_Condition;
+
+    static uint8 R_Page_IsStillPressed = NO_Condition;
+
+    static uint8 L_Page_IsStillPressed = NO_Condition;
+
+    volatile sint8 local_currentValue_keypad = Keypad_GetPressedKey();/* Take last keypad pressed button */
+    /*  This if used to see only value of button pressed in Keypad  */
+    if(local_currentValue_keypad >= 0 )
+    {
+            
+        //LCD_MoveCursor(3,0);
+        /*✍️LCD_SMALL_LARGE*/
+        LCD_MoveCursor(1,0);
+        LCD_DisplayCharacter((local_currentValue_keypad + '0'));
+
+    }
+
+
+
+    /*  Handle GearBox Button   */
+    /*  GearBox switch only happen when press on gearbox and brake button in same time  */
+    if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
+    // if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
+    {
+        /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
+        if(GearBox_IsStillPressed == NO_Condition)
+        {
+            GearBox_IsStillPressed = YES_Condition ;
+            /* turn buzzer on and give timer 0 clock and set timeout    */
+            Buzzer_NotifySound();
+
+            /*  Go to next state for gearbox*/
+            GearBox_Current_State ++ ;
+            if(GearBox_Current_State == GearBox_Return_to_N  )
+            {
+                GearBox_Current_State = N_GearBox ;
+                
+            }
+
+            /*  call function to update gearbox state in Dashboard*/
+            //DashBoard_Update_GearBox_state(GearBox_Current_State);
+            /*✍️LCD_SMALL_LARGE*/
+            DashBoard_Update_GearBox_state_small(GearBox_Current_State);
+        }
+        
+    }
+    else
+    {
+        /*  Enter this state when Button released*/
+        GearBox_IsStillPressed = NO_Condition ;
+    }
+
+
+    if(GearBox_Current_State == D_GearBox)
+    {
+        /*  Handle Cruise Control System Button   */
+        if(local_currentValue_keypad == Keypad_CCS_pressed_value) 
+        {
+            /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
+            if(CCS_IsStillPressed == NO_Condition)
+            {
+                CCS_IsStillPressed = YES_Condition ;
+                /* turn buzzer on and give timer 0 clock and set timeout    */
+                Buzzer_NotifySound();
+
+                if(CCS_Currnet_state == CCS_Disable ) 
+                {
+                    
+                    /*  Update ACCS state with new value (Enabled)*/
+                    CCS_Currnet_state = CCS_Enable;
+                    DashBoard_Update_CCS_State(CCS_Currnet_state);
+                    
+                    //DashBoard_DistanceShow();
+                    //DashBoard_DistanceShow_small();
+                }
+                else
+                {
+                    CCS_Currnet_state = CCS_Disable;
+
+                    /*  Turn off led that work in Adaptive cruise control  as may be  in not safe area and  turn off Adaptive cruise control   */
+                    //LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+                    /*  🚩🚩🚩🚩🚩🚩🙆‍♂️🙆‍♂️🙆‍♂️ i think that I need to put diable and enable to interrupt as I may be ACCS enabled and when I disable and press braiking at same time */
+                    //LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+
+                    DashBoard_Update_CCS_State(CCS_Currnet_state);
+
+                    
+                    //DashBoard_DistanceHide();
+                    //DashBoard_DistanceHide_small();
+                }
+            }
+            
+        }
+        else
+        {
+            /*  Enter this state when Button released*/
+            CCS_IsStillPressed = NO_Condition ;
+        }
+    }
+
+    /*  ⚠️⚠️⚠️⚠️ I think that is critical section   */
+    if(local_currentValue_keypad == Keypad_Page_R_pressed_value)
+    {
+        if(R_Page_IsStillPressed == NO_Condition)
+        {
+            R_Page_IsStillPressed = YES_Condition ;
+            Page_Current_State++ ; /*   Move one right page*/
+            if(Page_Current_State == 3) /*  Exceed page 3 so it need to handle and return to page one  */
+            {
+                Page_Current_State = Page_1_LCD ;
+            }
+            /*  Call function that will handle display in LCD*/
+            // APP_DashBoardPage_update();
+            /*✍️LCD_SMALL_LARGE*/
+            APP_DashBoardPage_update_small();
+        }
+    }
+    else 
+    {
+        /*  Enter this state when Button released*/
+        R_Page_IsStillPressed = NO_Condition ;
+    }
+
+    /*  ⚠️⚠️⚠️⚠️ I think that is critical section   */
+    if(local_currentValue_keypad == Keypad_Page_L_pressed_value)
+    {
+        if(L_Page_IsStillPressed == NO_Condition)
+        {
+            L_Page_IsStillPressed = YES_Condition ;
+            Page_Current_State-- ; /*   Move one right page*/
+            if(Page_Current_State == -1) /*  Exceed page 3 so it need to handle and return to page one  */
+            {
+                Page_Current_State = Page_3_LCD ;
+            }
+            /*  Call function that will handle display in LCD*/
+            // APP_DashBoardPage_update();
+            /*✍️LCD_SMALL_LARGE*/
+            APP_DashBoardPage_update_small();
+        }
+    }
+    else 
+    {
+        /*  Enter this state when Button released*/
+        L_Page_IsStillPressed = NO_Condition ;
+    }
+
+
 
 }
 
 
 static void Hanndle_GrearBox_D_State(void)
 {
-    if((ACCS_Currnet_state == ACCS_Enable) && (D_GearBox == GearBox_Current_State))
+    if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
     {
        // ACCS_CatchDistance();
         /*  may be interrupt happen here so inside next function check if brake button pressed and make disable for ACCS    */
@@ -138,14 +387,14 @@ static void Hanndle_GrearBox_N_State(void)
 {
     if(GearBox_Current_State == N_GearBox)
     {
-        if(ACCS_Currnet_state == ACCS_Enable)
+        if(CCS_Currnet_state == CCS_Enable)
         {
             /*  Disable ACCS if Enabled  */
-            ACCS_Currnet_state = ACCS_Disable;
+            CCS_Currnet_state = CCS_Disable;
             /*  Update LCD with new change*/
-            DashBoard_Update_ACCS_State(ACCS_Currnet_state);
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
             /*  Initailize for small LCD*/
-            //DashBoard_Update_ACCS_State_small(ACCS_Currnet_state);
+            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
             
             DashBoard_DistanceHide();
            // DashBoard_DistanceHide_small();
@@ -162,15 +411,15 @@ static void Hanndle_GrearBox_R_State(void)
     {
         /*  Turn off led that work in Adaptive cruise control  as may make switch by gearBox so I need to handle this   */
         LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
-        if(ACCS_Currnet_state == ACCS_Enable)
+        if(CCS_Currnet_state == CCS_Enable)
         {
             /*  Disable ACCS if Enabled  */
-            ACCS_Currnet_state = ACCS_Disable;
+            CCS_Currnet_state = CCS_Disable;
 
             /*  Update LCD with new change*/
-            DashBoard_Update_ACCS_State(ACCS_Currnet_state);
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
             /*  Initailize for small LCD*/
-            //DashBoard_Update_ACCS_State_small(ACCS_Currnet_state);
+            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
             
             DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();
@@ -180,171 +429,105 @@ static void Hanndle_GrearBox_R_State(void)
 
 
 
-static void Buttons_Update(void)
-{   
+// static void Buttons_Update(void)
+// {   
 
-    /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
-    static uint8 GearBox_IsStillPressed = NO_Condition;
-    /*  Take current state for button  to check if still pressed*/
-    uint8 GearBox_BTN_State = BUTTON_GetValue(GearBox_BTN_PORT,GearBox_BTN_PIN);
+//     /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
+//     static uint8 GearBox_IsStillPressed = NO_Condition;
+//     /*  Take current state for button  to check if still pressed*/
+//     uint8 GearBox_BTN_State = BUTTON_GetValue(GearBox_BTN_PORT,GearBox_BTN_PIN);
     
-    if(GearBox_BTN_State == BTN_Pressed_State)
-    {
-        /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
-        if(GearBox_IsStillPressed == NO_Condition)
-        {
-            /* turn buzzer on and give timer 0 clock and set timeout    */
-            Buzzer_NotifySound();
+//     if(GearBox_BTN_State == BTN_Pressed_State)
+//     {
+//         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
+//         if(GearBox_IsStillPressed == NO_Condition)
+//         {
+//             /* turn buzzer on and give timer 0 clock and set timeout    */
+//             Buzzer_NotifySound();
 
-            GearBox_IsStillPressed = YES_Condition ;
-            /*  Go to next state for gearbox*/
-            GearBox_Current_State ++ ;
-            if(GearBox_Current_State == GearBox_Return_to_N  )
-            {
-                GearBox_Current_State = N_GearBox ;
+//             GearBox_IsStillPressed = YES_Condition ;
+//             /*  Go to next state for gearbox*/
+//             GearBox_Current_State ++ ;
+//             if(GearBox_Current_State == GearBox_Return_to_N  )
+//             {
+//                 GearBox_Current_State = N_GearBox ;
                 
-            }
+//             }
 
-            /*  call function to update gearbox state in Dashboard*/
-            DashBoard_Update_GearBox_state(GearBox_Current_State);
-            /*  Initailize for small LCD*/
-            //DashBoard_Update_GearBox_state_small(GearBox_Current_State);
-        }
+//             /*  call function to update gearbox state in Dashboard*/
+//             DashBoard_Update_GearBox_state(GearBox_Current_State);
+//             /*  Initailize for small LCD*/
+//             //DashBoard_Update_GearBox_state_small(GearBox_Current_State);
+//         }
         
-    }
-    else
-    {
-        /*  Enter this state when Button released*/
-        GearBox_IsStillPressed = NO_Condition ;
-    }
+//     }
+//     else
+//     {
+//         /*  Enter this state when Button released*/
+//         GearBox_IsStillPressed = NO_Condition ;
+//     }
   
 
-    if(GearBox_Current_State == D_GearBox)
-    {
-        /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
-        static uint8 ACCS_IsStillPressed = NO_Condition;
-        /*  Take current state for button  to check if still pressed*/
-        uint8 ACCS_BTN_State = BUTTON_GetValue(ACCS_BTN_PORT,ACCS_BTN_PIN);
+    // if(GearBox_Current_State == D_GearBox)
+    // {
+    //     /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
+    //     static uint8 ACCS_IsStillPressed = NO_Condition;
+    //     /*  Take current state for button  to check if still pressed*/
+    //     uint8 ACCS_BTN_State = BUTTON_GetValue(ACCS_BTN_PORT,ACCS_BTN_PIN);
         
-        if(ACCS_BTN_State == BTN_Pressed_State)
-        {
-            /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
-            if(ACCS_IsStillPressed == NO_Condition)
-            {
-                /* turn buzzer on and give timer 0 clock and set timeout    */
-                Buzzer_NotifySound();
+    //     if(ACCS_BTN_State == BTN_Pressed_State)
+    //     {
+    //         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
+    //         if(ACCS_IsStillPressed == NO_Condition)
+    //         {
+    //             /* turn buzzer on and give timer 0 clock and set timeout    */
+    //             Buzzer_NotifySound();
 
-                ACCS_IsStillPressed = YES_Condition ;
+    //             ACCS_IsStillPressed = YES_Condition ;
                 
-                if(ACCS_Currnet_state == ACCS_Disable ) 
-                {
+    //             if(ACCS_Currnet_state == ACCS_Disable ) 
+    //             {
                     
-                    /*  Update ACCS state with new value (Enabled)*/
-                    ACCS_Currnet_state = ACCS_Enable;
-                    DashBoard_Update_ACCS_State(ACCS_Currnet_state);
-                    /*  Initailize for small LCD*/
-                    //DashBoard_Update_ACCS_State_small(ACCS_Currnet_state);
-                    DashBoard_DistanceShow();
-                    //DashBoard_DistanceShow_small();
-                }
-                else
-                {
-                    ACCS_Currnet_state = ACCS_Disable;
+    //                 /*  Update ACCS state with new value (Enabled)*/
+    //                 ACCS_Currnet_state = ACCS_Enable;
+    //                 DashBoard_Update_CCS_State(ACCS_Currnet_state);
+    //                 /*  Initailize for small LCD*/
+    //                 //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
+    //                 DashBoard_DistanceShow();
+    //                 //DashBoard_DistanceShow_small();
+    //             }
+    //             else
+    //             {
+    //                 ACCS_Currnet_state = ACCS_Disable;
 
-                    /*  Turn off led that work in Adaptive cruise control  as may be  in not safe area and  turn off Adaptive cruise control   */
-                    //LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
-                    /*  🚩🚩🚩🚩🚩🚩🙆‍♂️🙆‍♂️🙆‍♂️ i think that I need to put diable and enable to interrupt as I may be ACCS enabled and when I disable and press braiking at same time */
-                    //LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+    //                 /*  Turn off led that work in Adaptive cruise control  as may be  in not safe area and  turn off Adaptive cruise control   */
+    //                 //LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+    //                 /*  🚩🚩🚩🚩🚩🚩🙆‍♂️🙆‍♂️🙆‍♂️ i think that I need to put diable and enable to interrupt as I may be ACCS enabled and when I disable and press braiking at same time */
+    //                 //LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
 
-                    DashBoard_Update_ACCS_State(ACCS_Currnet_state);
-                    /*  Initailize for small LCD*/
-                    //DashBoard_Update_ACCS_State_small(ACCS_Currnet_state);
+    //                 DashBoard_Update_CCS_State(ACCS_Currnet_state);
+    //                 /*  Initailize for small LCD*/
+    //                 //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
 
                     
-                    DashBoard_DistanceHide();
-                    //DashBoard_DistanceHide_small();
-                }
+    //                 DashBoard_DistanceHide();
+    //                 //DashBoard_DistanceHide_small();
+    //             }
 
  
-            }
-        }
-        else
-        {
-            /*  Enter this state when Button released*/
-            ACCS_IsStillPressed = NO_Condition ;
-        }
-    }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         /*  Enter this state when Button released*/
+    //         ACCS_IsStillPressed = NO_Condition ;
+    //     }
+    // }
 
-
-    
-
-
-}
+// }
 
 
 
-static void DashBoard_Init(void)
-{
-    /*  Display GearBox Current state  */
-    LCD_MoveCursor(0,0);
-    LCD_DisplayString((const uint8 * )"GearBox(N,D,R) : N");
-
-    /*  Display speed */
-    LCD_MoveCursor(1,0);
-    LCD_DisplayString((const uint8 * )"Speed : 0 KM");
-
-    /*  Display state of Adaptive Cruise control  */
-    LCD_MoveCursor(2,0);
-    LCD_DisplayString((const uint8 * )"CC : ");
-    LCD_DisplayCharacter(POS_LCD_False_ICON);
-
-    LCD_DisplayString((const uint8 * )" BA : ");
-    LCD_DisplayCharacter(POS_LCD_False_ICON);
-
-    LCD_DisplayString((const uint8 * )" SL : ");
-    LCD_DisplayCharacter(POS_LCD_False_ICON);
-
-    /*  Display pages in LCD as I currently in page 2 */
-    LCD_MoveCursor(3,9);
-    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
-    LCD_DisplayCharacter(POS_LCD_Page_Selected);
-    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
-
-}
-
-
-
-static void DashBoard_Update_GearBox_state(uint8 GearBox_state)
-{
-    /*  Array carry All Characters For GearBox as make display easier using index*/
-    uint8 GearBox_Characyer [] = {'N','D','R'};
-    /*  Go to index that display current GearBox state*/
-    LCD_MoveCursor(0,17);
-    /*  Edit its state with new state given to function*/
-    LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);
-}
-
-static void DashBoard_Update_ACCS_State(uint8 ACCS_state)
-{
-    const uint8 * ACCS_String[] = {(const uint8 * )"OFF",(const uint8 * )"ON "};
-    /*  Go to index that display current GearBox state*/
-    LCD_MoveCursor(2,15);
-    /*  Edit its state with new state given to function*/
-    LCD_DisplayString(ACCS_String[ACCS_state]);
-}
-
-static void DashBoard_DistanceShow(void)
-{
-    LCD_MoveCursor(3,0);
-    LCD_DisplayString((const uint8 * )"Distance : ");
-}
-
-
-static void DashBoard_DistanceHide(void)
-{
-    LCD_MoveCursor(3,0);
-    LCD_DisplayString((const uint8 * )"                    ");
-}
 
 
 static void DashBoard_Handle_Page(void)
@@ -387,7 +570,7 @@ static void Braking_Button_Handling(void)
         //     /*  Turn off led of it was turned on  */
         //     LED_OnOffPositiveLogic(Green_LED_PORT,Green_LED_PIN,LED_OFF);
         //     /*  Update LCD with new change*/
-        //     DashBoard_Update_ACCS_State(ACCS_Currnet_state);
+        //     DashBoard_Update_CCS_State(ACCS_Currnet_state);
 
         //     DashBoard_DistanceHide();
 
@@ -410,13 +593,13 @@ static void Braking_Button_Handling(void)
 
 void tessst (void)
 {
-        if((GearBox_Current_State == D_GearBox) && (ACCS_Currnet_state == ACCS_Enable))
+        if((GearBox_Current_State == D_GearBox) && (CCS_Currnet_state == CCS_Enable))
         {
             /*	Enable Global Interrupt  */
 	        sei();
 
             /*  Disable ACCS if Enabled  */
-            ACCS_Currnet_state = ACCS_Disable;
+            CCS_Currnet_state = CCS_Disable;
 
             /*  Then turn off yellow as may be close to crash   */
             LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
@@ -424,11 +607,11 @@ void tessst (void)
 
 
             /*  Update LCD with new change*/
-            DashBoard_Update_ACCS_State(ACCS_Currnet_state);
-            /*  Initailize for small LCD*/
-            //DashBoard_Update_ACCS_State_small(ACCS_Currnet_state);
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
+            /*✍️LCD_SMALL_LARGE*/
+            //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
 
-            DashBoard_DistanceHide();
+            // DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();
 
         }
@@ -486,7 +669,7 @@ static void ACCS_CatchDistance(void)
 
 static void ACCS_DicisionTake(void)
 {
-    if((ACCS_Currnet_state == ACCS_Enable) && (D_GearBox == GearBox_Current_State))
+    if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
     {
 
         cli();
@@ -558,39 +741,38 @@ static void ACCS_DicisionTake(void)
 
 /******************************************************************************/
 
-// static void DashBoard_Init_small(void)
-// {
-//     /*  Display GearBox Current state  */
-//     LCD_MoveCursor(0,0);
-//     LCD_DisplayString((const uint8 * )"GearBox:N");
+static void DashBoard_Init_small(void)
+{
+    /*  Display GearBox Current state  */
+    LCD_MoveCursor(0,0);
+    LCD_DisplayString((const uint8 * )"G:NC");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+    LCD_DisplayCharacter('B');
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+    LCD_DisplayCharacter('L');
+    LCD_DisplayCharacter(POS_LCD_False_ICON); 
 
-//     /*  Display speed */
-//     LCD_MoveCursor(0,9);
-//     LCD_DisplayString((const uint8 * )",S:0");
+    LCD_DisplayString((const uint8 * )"S0");
 
-//     /*  Display state of Adaptive Cruise control  */
-//     LCD_MoveCursor(1,0);
-//     LCD_DisplayString((const uint8 * )"ACCS:OFF");    
-// }
 
-// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state)
-// {
-//     /*  Array carry All Characters For GearBox as make display easier using index*/
-//     uint8 GearBox_Characyer [] = {'N','D','R'};
-//     /*  Go to index that display current GearBox state*/
-//     LCD_MoveCursor(0,8);
-//     /*  Edit its state with new state given to function*/
-//     LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);    
-// }
+    /*  Display state of Adaptive Cruise control  */
+    LCD_MoveCursor(1,7);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Selected);
+    LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);   
+}
 
-// static void DashBoard_Update_ACCS_State_small(uint8 ACCS_state)
-// {
-//     const uint8 * ACCS_String[] = {(const uint8 * )"OFF",(const uint8 * )"ON "};
-//     /*  Go to index that display current GearBox state*/
-//     LCD_MoveCursor(1,5);
-//     /*  Edit its state with new state given to function*/
-//     LCD_DisplayString(ACCS_String[ACCS_state]);
-// }
+static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state)
+{
+    /*  Array carry All Characters For GearBox as make display easier using index*/
+    uint8 GearBox_Characyer [] = {'N','D','R'};
+    /*  Go to index that display current GearBox state*/
+    LCD_MoveCursor(0,2);
+    /*  Edit its state with new state given to function*/
+    LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);    
+}
+
+
 
 // static void DashBoard_DistanceShow_small(void)
 // {
@@ -605,3 +787,12 @@ static void ACCS_DicisionTake(void)
 //     LCD_DisplayString((const uint8 * )"        ");
 // }
 
+static void APP_DashBoardPage_update_small(void)
+{
+    uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
+    LCD_MoveCursor(1,7);
+    /*  Display indicator for current page  */
+    LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
+    LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
+    LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
+}
