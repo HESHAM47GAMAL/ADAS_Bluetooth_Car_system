@@ -108,22 +108,38 @@ void A_APPLICATION_VOID_MAIN_LCD_STATICS(void);
 
 
 
-
-
-
-
-
 /*
-*   @ Brief : this function is For Displaying which gear on lcd
+*   @ Brief : this function is For Displaying which page are we at on lcd
 *   @ Arguments :   which gearbox state we are in
 *   @ Returns : no return
 *   @ Synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 
-void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state);
+static void A_APPLICATION_VOID_LCD_PAGE_DISPLAY(uint8 state);
 
 
+
+
+/*
+*   @ Brief : this function is For Displaying which gear on lcd from right to left
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_GBX_DISPLAY_L2R(uint8 state);
+
+/*
+*   @ Brief : this function is For Displaying which gear on lcd from left to right
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_GBX_DISPLAY_L2R(uint8 state);
 
 
 /*
@@ -136,7 +152,86 @@ void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state);
 
 void A_APPLICATION_VOID_GBX_CHANGE(void);
 
+/*
+*   @ Brief : this function is For changing the BA state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
 
+void A_APPLICATION_VOID_BA_CHANGE(void);
+
+
+/*
+*   @ Brief : this function is For changing the CCS state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_CCS_CHANGE(void);
+
+
+/*
+*   @ Brief : this function is For changing the SL state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_SL_CHANGE(void);
+
+
+
+/*
+*
+*   @ Brief : this function is For scrol;ling screen right the Screen
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_SCREEN_SCROLL_RIGHT(void);
+
+
+
+/*
+*
+*   @ Brief : this function is For scrol;ling screen left the Screen
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_SCREEN_SCROLL_LEFT(void);
+
+
+
+
+/*
+*   @ Brief : this function is For Displaying inverted alarm on lcd
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_ALERT_INVERTED(void);
+
+
+
+/*
+*   @ Brief : this function is For clearing variable infro within pages
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_LCD_VARIABLE_CLEAR(void);
 
 
 
@@ -158,3 +253,5 @@ void A_APPLICATION_VOID_GBX_CHANGE(void);
 //    }
 //
 //}
+
+

@@ -10,8 +10,6 @@
  *
  *******************************************************************************/
 
-
-
 /**************************                   INCLUDES                   **************************/
 
 #include "Application_interface.h"
@@ -19,26 +17,61 @@
 #include "../SERVICE/IVT.h"
 #include <util/delay.h>
 
-
-
-
-
 /**************************                   Enums                    **************************/
-enum	E_LCD_PAGE{
+enum E_LCD_PAGE
+{
 	E_LCD_PAGE_MAIN,
-	E_LCD_PAGE_RIGHT,
-	E_LCD_PAGE_LEFT
+	E_LCD_PAGE_SL,
+	E_LCD_PAGE_CCSBA,
+	E_LCD_PAGE_INFO
 };
 
-enum	E_GBX{
+enum E_LCD_PAGE_L2R
+{
+	E_L2R_LCD_PAGE_MAIN,
+	E_L2R_LCD_PAGE_RIGHT,
+	E_L2R_LCD_PAGE_INFO,
+	E_L2R_LCD_PAGE_LEFT
+};
+
+enum E_LCD_PAGE_R2L
+{
+	E_R2L_LCD_PAGE_MAIN,
+	E_R2L_LCD_PAGE_LEFT,
+	E_R2L_LCD_PAGE_INFO,
+	E_R2L_LCD_PAGE_RIGHT
+};
+
+enum E_LCD_CUSTOM_CHARACTERS
+{
+	E_CHAR_GBX_SELECTED,
+	E_CHAR_PAGE_SELECTED,
+	E_CHAR_PAGE_NOT_SELECTED,
+	E_CHAR_PAGE_INV_A,
+	E_CHAR_PAGE_INV_L,
+	E_CHAR_PAGE_INV_E,
+	E_CHAR_PAGE_INV_R,
+	E_CHAR_PAGE_INV_T,
+};
+
+enum BA_STATE
+{
+	E_BA_ON,
+	E_BA_OFF,
+	E_BA_RETURN_TO_ON
+
+};
+
+enum E_GBX
+{
 	E_GBX_NEUTRAL,
 	E_GBX_DRIVE,
 	E_GBX_REVERSE,
 	E_GBX_RETURN_TO_N
 };
 
-
-enum E_KEYPAD{
+enum E_KEYPAD
+{
 	E_KEYPAD_CCS_TOG,
 	E_KEYPAD_LEFT_PAGE,
 	E_KEYPAD_GEARBOX,
@@ -51,243 +84,618 @@ enum E_KEYPAD{
 	E_KEYPAD_SPEED_LIMITER_INC
 };
 
-/**************************                   Global variable                   **************************/
-volatile uint8 LCD_SELECT = E_LCD_PAGE_MAIN;
+/**************************                   Global variables                   **************************/
+volatile uint8 LCD_PAGE_STATE = E_LCD_PAGE_MAIN;
 uint8 volatile KEYPAD_PRESSED = -1;
-uint8  GBX_STATE = E_GBX_NEUTRAL;
-uint8  GBX_IS_STILL_PRESSED = NO_Condition;
+uint8 BA_STATE = OFF;
+uint8 CCS_STATE = OFF;
+uint8 SL_STATE = OFF;
 
+uint8 GBX_STATE = E_GBX_NEUTRAL;
+uint8 GBX_IS_STILL_PRESSED = NO_Condition;
+uint8 SCREEN_RIGHT_SCROLL_IS_STILL_PRESSED = NO_Condition;
+uint8 SCREEN_LEFT_SCROLL_IS_STILL_PRESSED = NO_Condition;
+uint8 BA_IS_STILL_PRESSED = NO_Condition;
+uint8 CCS_IS_STILL_PRESSED = NO_Condition;
+uint8 SL_IS_STILL_PRESSED = NO_Condition;
 
+/**************************                   SPECIAL LCD variables                   **************************/
+uint8 GBX_SELECTED[] = {0x04, 0x0E, 0x15, 0x04, 0x04, 0x00, 0x00, 0x00};
+uint8 PAGE_SELECTED[] = {0x00, 0x00, 0x0E, 0x1F, 0x1F, 0x1F, 0x0E, 0x00};
+uint8 PAGE_NOT_SELECTED[] = {0x00, 0x00, 0x0E, 0x11, 0x15, 0x11, 0x0E, 0x00};
+uint8 INVERTED_A[] = {0x1F, 0x1B, 0x15, 0x11, 0x15, 0x15, 0x1F, 0x1F};
+uint8 INVERTED_L[] = {0x1F, 0x17, 0x17, 0x17, 0x17, 0x11, 0x1F, 0x1F};
+uint8 INVERTED_E[] = {0x1F, 0x11, 0x17, 0x11, 0x17, 0x11, 0x1F, 0x1F};
+uint8 INVERTED_R[] = {0x1F, 0x11, 0x15, 0x13, 0x15, 0x15, 0x1F, 0x1F};
+uint8 INVERTED_T[] = {0x1F, 0x11, 0x1B, 0x1B, 0x1B, 0x1B, 0x1F, 0x1F};
 
 /**************************                   Function bodies                   **************************/
 
-
 // Body of initialize function
-void A_APPLICATION_VOID_INIT(void){
-	//initialize LEDs needed
-	LED_Init(YLW_LED_PORT,YLW_LED_PIN);
-	LED_Init(RED_LED_PORT,RED_LED_PIN);
+void A_APPLICATION_VOID_INIT(void)
+{
+	// initialize LEDs needed
+	LED_Init(YLW_LED_PORT, YLW_LED_PIN);
+	LED_Init(RED_LED_PORT, RED_LED_PIN);
 
-	//initialize Buzzer
-	Buzzer_Init(BZR_PORT,BZR_PIN);
+	// initialize Buzzer
+	Buzzer_Init(BZR_PORT, BZR_PIN);
 
-	//initialize LCD
+	// initialize LCD
 	LCD_init();
 
-	//initialize ADC
+	// initialize ADC
 	ADC_Init();
 
-	//initialize External interrupt
-	INT0_init(RISING_EDGE_TRIGGER,INPUT_PIN);
+	// initialize External interrupt
+	INT0_init(RISING_EDGE_TRIGGER, INPUT_PIN);
 
-	//initialize keypad
+	// initialize keypad
 	Keypad_init();
 
+	// initialize of special characters
+	LCD_GenerateCharacterCGRAM(GBX_SELECTED, E_CHAR_GBX_SELECTED);
+	LCD_GenerateCharacterCGRAM(PAGE_SELECTED, E_CHAR_PAGE_SELECTED);
+	LCD_GenerateCharacterCGRAM(PAGE_NOT_SELECTED, E_CHAR_PAGE_NOT_SELECTED);
+	LCD_GenerateCharacterCGRAM(INVERTED_A, E_CHAR_PAGE_INV_A);
+	LCD_GenerateCharacterCGRAM(INVERTED_L, E_CHAR_PAGE_INV_L);
+	LCD_GenerateCharacterCGRAM(INVERTED_E, E_CHAR_PAGE_INV_E);
+	LCD_GenerateCharacterCGRAM(INVERTED_R, E_CHAR_PAGE_INV_R);
+	LCD_GenerateCharacterCGRAM(INVERTED_T, E_CHAR_PAGE_INV_T);
 }
 
 /************************** LCD screen select function **************************/
-void A_APPLICATION_VOID_MAIN_LCD_SCREEN_SELECT(){
+void A_APPLICATION_VOID_MAIN_LCD_SCREEN_SELECT()
+{
 
-	switch (LCD_SELECT) {
+	switch (LCD_PAGE_STATE)
+	{
 	case E_LCD_PAGE_MAIN:
 
 		break;
 
-	case E_LCD_PAGE_RIGHT:
+	case E_LCD_PAGE_SL:
 
 		break;
 
-	case E_LCD_PAGE_LEFT:
+	case E_LCD_PAGE_CCSBA:
+		// A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
+		// LCD_MoveCursor(0, 0);
+		// LCD_DisplayString((const uint8 *)"CCS : ");
+
+		// LCD_MoveCursor(1, 0);
+		// LCD_DisplayString((const uint8 *)"BA : ");
 
 		break;
+
+	case E_LCD_PAGE_INFO:
+
+		break;
+
 	default:
 		break;
 	}
-
 }
 
 /************************** Keypad button read check function **************************/
-void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void){
+void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void)
+{
 	KEYPAD_PRESSED = Keypad_GetPressedKey();
 
-	if((KEYPAD_PRESSED == E_KEYPAD_GEARBOX ))
+	if ((KEYPAD_PRESSED == E_KEYPAD_GEARBOX))
 	{
 		A_APPLICATION_VOID_GBX_CHANGE();
-
 	}
-	else {
+	else
+	{
 		GBX_IS_STILL_PRESSED = NO_Condition;
 	}
 
-
-
-
-
-	if (KEYPAD_PRESSED == E_KEYPAD_CCS_TOG) {
+	if (KEYPAD_PRESSED == E_KEYPAD_CCS_TOG)
+	{
+		A_APPLICATION_VOID_BA_CHANGE();
 
 	}
-	else {
-
-
-	}
-
-	if (KEYPAD_PRESSED == E_KEYPAD_LEFT_PAGE) {
-LCD_ClearScreen();
-
-	}
-	else {
-
+	else
+	{
+		BA_IS_STILL_PRESSED = NO_Condition;
 
 	}
 
-	if (KEYPAD_PRESSED == E_KEYPAD_GEARBOX) {
-
-
+	if (KEYPAD_PRESSED == E_KEYPAD_LEFT_PAGE)
+	{
+		A_APPLICATION_VOID_SCREEN_SCROLL_LEFT();
 	}
-	else {
+	else
+	{
 
-
-	}
-
-	if (KEYPAD_PRESSED == E_KEYPAD_RIGHT_PAGE) {
-
-
-	}
-	else {
-
-
+		SCREEN_LEFT_SCROLL_IS_STILL_PRESSED = NO_Condition;
 	}
 
-	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_DEC) {
+	if (KEYPAD_PRESSED == E_KEYPAD_GEARBOX)
+	{
+	}
+	else
+	{
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_RIGHT_PAGE)
+	{
+		A_APPLICATION_VOID_SCREEN_SCROLL_RIGHT();
+	}
+	else
+	{
+		SCREEN_RIGHT_SCROLL_IS_STILL_PRESSED = NO_Condition;
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_DEC)
+	{
+	}
+	else
+	{
+	}
+
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_TOG)
+	{
+			A_APPLICATION_VOID_SL_CHANGE();
+		
+	}
+	else
+	{
+		SL_IS_STILL_PRESSED = NO_Condition;
 
 	}
-	else {
 
-
-	}
-
-	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_TOG) {
-
-		LCD_MoveCursor(2,2);
+	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_INC)
+	{
+		LCD_MoveCursor(2, 2);
 		LCD_DisplayCharacter((KEYPAD_PRESSED + '0'));
-
 	}
-	else {
-
-
+	else
+	{
 	}
 
-	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_INC) {
-		LCD_MoveCursor(2,2);
+	if (KEYPAD_PRESSED == '*')
+	{
+		LCD_MoveCursor(2, 2);
 		LCD_DisplayCharacter((KEYPAD_PRESSED + '0'));
-
-
 	}
-	else {
-
+	else
+	{
 	}
-
-
-
-
 }
 
+void A_APPLICATION_VOID_MAIN_LCD_LOAD(void)
+{
+	LCD_MoveCursor(3, 0);
+	LCD_DisplayString((const uint8 *)"CCS");
 
+	LCD_MoveCursor(3, 4);
+	LCD_DisplayString((const uint8 *)"BA");
 
+	LCD_MoveCursor(3, 8);
+	LCD_DisplayString((const uint8 *)"SL");
 
-void A_APPLICATION_VOID_MAIN_LCD_LOAD(void){
-	LCD_MoveCursor(3,0);
-	LCD_DisplayString((const uint8 * )"CCS");
+	LCD_MoveCursor(0, 9);
+	LCD_DisplayString((const uint8 *)"S: 999 Km/h");
 
-	LCD_MoveCursor(3,5);
-	LCD_DisplayString((const uint8 * )"BAS");
+	LCD_MoveCursor(1, 9);
+	LCD_DisplayString((const uint8 *)"GBX : R N D");
 
-	LCD_MoveCursor(3,10);
-	LCD_DisplayString((const uint8 * )"SL");
+	A_APPLICATION_VOID_ALERT_INVERTED();
 
-	LCD_MoveCursor(0,9);
-	LCD_DisplayString((const uint8 * )"S: 999 Km/h");
+	LCD_MoveCursor(2, 15);
+	LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
 
-	LCD_MoveCursor(1,13);
-	LCD_DisplayString((const uint8 * )"R N D");
+	LCD_MoveCursor(2, 17);
+	LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
+
+	LCD_MoveCursor(2, 19);
+	LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
+
+	LCD_MoveCursor(3, 16);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+	LCD_MoveCursor(3, 17);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+	LCD_MoveCursor(3, 18);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+	LCD_MoveCursor(3, 19);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
 
 	_delay_ms(2000);
 	LCD_ClearScreen();
 	A_APPLICATION_VOID_MAIN_LCD_STATICS();
-
-
-
-
 }
 
+void A_APPLICATION_VOID_MAIN_LCD_STATICS(void)
+{
+	LCD_MoveCursor(0, 9);
+	LCD_DisplayString((const uint8 *)"S:     KM/h");
 
-void A_APPLICATION_VOID_MAIN_LCD_STATICS(void){
-	LCD_MoveCursor(0,9);
-	LCD_DisplayString((const uint8 * )"S:     KM/h");
+	LCD_MoveCursor(1, 9);
+	LCD_DisplayString((const uint8 *)"GBX : R N D");
 
-	LCD_MoveCursor(1,13);
-	LCD_DisplayString((const uint8 * )"R N D");
-
+	LCD_MoveCursor(3, 11);
+	LCD_DisplayString((const uint8 *)"ALERT");
+	A_APPLICATION_VOID_LCD_PAGE_DISPLAY_R2L(LCD_PAGE_STATE);
 }
 
-void A_APPLICATION_VOID_GBX_CHANGE(void){
+void A_APPLICATION_VOID_GBX_CHANGE(void)
+{
 
-		if(GBX_IS_STILL_PRESSED == NO_Condition)
+	if (GBX_IS_STILL_PRESSED == NO_Condition)
+	{
+		GBX_IS_STILL_PRESSED = YES_Condition;
+
+		GBX_STATE++;
+
+		if (GBX_STATE == E_GBX_RETURN_TO_N)
 		{
-			GBX_IS_STILL_PRESSED = YES_Condition ;
+			GBX_STATE = E_GBX_NEUTRAL;
+		}
 
-			/*  Go to next state for gearbox*/
-			GBX_STATE++ ;
+		A_APPLICATION_VOID_GBX_DISPLAY(GBX_STATE);
+	}
+}
+void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state)
+{
 
-			if(GBX_STATE == E_GBX_RETURN_TO_N)
-			{
-				GBX_STATE = E_GBX_NEUTRAL ;
+	switch (state)
+	{
+	case E_GBX_NEUTRAL:
+		LCD_MoveCursor(2, 15);
+		LCD_DisplayString((const uint8 *)"     ");
+		LCD_MoveCursor(2, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
 
-			}
+		break;
+	case E_GBX_DRIVE:
+		LCD_MoveCursor(2, 15);
+		LCD_DisplayString((const uint8 *)"     ");
+		LCD_MoveCursor(2, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
 
-			/*  call function to update gearbox state in Dashboard*/
-			A_APPLICATION_VOID_GBX_DISPLAY(GBX_STATE);
+		break;
+	case E_GBX_REVERSE:
+		LCD_MoveCursor(2, 15);
+		LCD_DisplayString((const uint8 *)"     ");
+		LCD_MoveCursor(2, 15);
+		LCD_DisplayCustomCharacter(E_CHAR_GBX_SELECTED);
+
+		break;
+	}
+}
+
+void A_APPLICATION_VOID_ALERT_INVERTED(void)
+{
+
+	LCD_MoveCursor(3, 11);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_INV_A);
+
+	LCD_MoveCursor(3, 12);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_INV_L);
+
+	LCD_MoveCursor(3, 13);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_INV_E);
+
+	LCD_MoveCursor(3, 14);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_INV_R);
+
+	LCD_MoveCursor(3, 15);
+	LCD_DisplayCustomCharacter(E_CHAR_PAGE_INV_T);
+}
+
+void A_APPLICATION_VOID_SCREEN_SCROLL_RIGHT(void)
+{
+	if (SCREEN_RIGHT_SCROLL_IS_STILL_PRESSED == NO_Condition)
+	{
+		SCREEN_RIGHT_SCROLL_IS_STILL_PRESSED = YES_Condition;
+
+		LCD_PAGE_STATE++;
+		if (LCD_PAGE_STATE == 4)
+		{
+			LCD_PAGE_STATE = E_R2L_LCD_PAGE_MAIN;
+		}
+
+		A_APPLICATION_VOID_LCD_PAGE_DISPLAY_R2L(LCD_PAGE_STATE);
+	}
+}
+
+void A_APPLICATION_VOID_SCREEN_SCROLL_LEFT(void)
+{
+	if (SCREEN_LEFT_SCROLL_IS_STILL_PRESSED == NO_Condition)
+	{
+		SCREEN_LEFT_SCROLL_IS_STILL_PRESSED = YES_Condition;
+
+		LCD_PAGE_STATE++;
+
+		if (LCD_PAGE_STATE == 4)
+		{
+			LCD_PAGE_STATE = E_L2R_LCD_PAGE_MAIN;
+		}
+
+		A_APPLICATION_VOID_LCD_PAGE_DISPLAY_L2R(LCD_PAGE_STATE);
+	}
+}
+
+void A_APPLICATION_VOID_LCD_PAGE_DISPLAY_R2L(uint8 state)
+{
+
+	switch (state)
+	{
+	case E_R2L_LCD_PAGE_MAIN:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		break;
+	case E_R2L_LCD_PAGE_RIGHT:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		break;
+	case E_R2L_LCD_PAGE_LEFT:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+		break;
+
+	case E_R2L_LCD_PAGE_INFO:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		break;
+	}
+}
+
+void A_APPLICATION_VOID_LCD_PAGE_DISPLAY_L2R(uint8 state)
+{
+
+	switch (state)
+	{
+	case E_L2R_LCD_PAGE_MAIN:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		break;
+	case E_L2R_LCD_PAGE_RIGHT:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		break;
+	case E_L2R_LCD_PAGE_LEFT:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		break;
+
+	case E_L2R_LCD_PAGE_INFO:
+		LCD_MoveCursor(3, 16);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 17);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 18);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_NOT_SELECTED);
+
+		LCD_MoveCursor(3, 19);
+		LCD_DisplayCustomCharacter(E_CHAR_PAGE_SELECTED);
+
+		break;
+	}
+}
+
+void A_APPLICATION_VOID_LCD_VARIABLE_CLEAR(void)
+{
+	LCD_MoveCursor(0, 0);
+	LCD_DisplayString((const uint8 *)"        ");
+	LCD_MoveCursor(1, 0);
+	LCD_DisplayString((const uint8 *)"        ");
+}
+
+void A_APPLICATION_VOID_BA_CHANGE(void)
+{
+
+	if (Keypad_GetPressedKey() == E_KEYPAD_CCS_TOG)
+	{
+		uint8 static counter = 0;
+		if (BA_IS_STILL_PRESSED == NO_Condition)
+		{
+
+			// LCD_MoveCursor(1, 5);
+			// LCD_DisplayString((const uint8 *)"OFF");
+			LCD_MoveCursor(3, 0);
+			LCD_DisplayString((const uint8 *)"   ");
+			LCD_MoveCursor(3, 4);
+			LCD_DisplayString((const uint8 *)"  ");
+			BA_STATE = OFF;
+			CCS_STATE = OFF;
+			BA_IS_STILL_PRESSED = YES_Condition;
+			counter++;
 
 		}
 
+		else if (counter != 1)
+		{
+		// LCD_MoveCursor(1, 5);
+		// LCD_DisplayString((const uint8 *)"ON ");
+		LCD_MoveCursor(3, 0);
+		LCD_DisplayString((const uint8 *)"CCS");
+		LCD_MoveCursor(3, 4);
+		LCD_DisplayString((const uint8 *)"BA");
+		BA_STATE = ON;
+		CCS_STATE = OFF;
+		counter = 0;
+		}
+		}
+			
+		
 
 
+	else
+	{
+		BA_IS_STILL_PRESSED = NO_Condition;
 
-}
-void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state){
-	/*  Array carry All Characters For GearBox as make display easier using index*/
-//	    uint8 GearBox_chars [] = {'N','D','R'};
-//	    /*  Go to index that display current GearBox state*/
-//	    LCD_MoveCursor(3,3);
-//	    /*  Edit its state with new state given to function*/
-//	    LCD_DisplayCharacter(GearBox_chars[state]);
 
-	switch (state) {
-	case E_GBX_NEUTRAL:
-		LCD_MoveCursor(2,13);
-		LCD_DisplayString((const uint8*)"  _  ");
-		break;
-	case E_GBX_DRIVE:
-		LCD_MoveCursor(2,13);
-		LCD_DisplayString((const uint8*)"    _");
-		break;
-	case E_GBX_REVERSE:
-		LCD_MoveCursor(2,13);
-		LCD_DisplayString((const uint8*)"_    ");
-		break;
-	default:
-		break;
 	}
+				
 
 }
 
 
+void A_APPLICATION_VOID_CCS_CHANGE(void)
+{
+
+	if (Keypad_GetPressedKey() == E_KEYPAD_CCS_TOG)
+	{
+		uint8 static counter = 0;
+		if (BA_IS_STILL_PRESSED == NO_Condition)
+		{
+
+			// LCD_MoveCursor(1, 5);
+			// LCD_DisplayString((const uint8 *)"OFF");
+			LCD_MoveCursor(3, 0);
+			LCD_DisplayString((const uint8 *)"   ");
+			LCD_MoveCursor(3, 4);
+			LCD_DisplayString((const uint8 *)"  ");
+			CCS_STATE = OFF;
+			BA_IS_STILL_PRESSED = YES_Condition;
+			counter++;
+
+		}
+
+		else if (counter != 1)
+		{
+		// LCD_MoveCursor(1, 5);
+		// LCD_DisplayString((const uint8 *)"ON ");
+		LCD_MoveCursor(3, 0);
+		LCD_DisplayString((const uint8 *)"CCS");
+		LCD_MoveCursor(3, 4);
+		LCD_DisplayString((const uint8 *)"BA");
+		CCS_STATE = ON;
+		counter = 0;
+		}
+		}
+			
+		
 
 
+	else
+	{
+		BA_IS_STILL_PRESSED = NO_Condition;
 
 
+	}
+				
+
+}
 
 
+void A_APPLICATION_VOID_SL_CHANGE(void)
+{
+
+	if (Keypad_GetPressedKey() == E_KEYPAD_SPEED_LIMITER_TOG)
+	{
+		uint8 static counter = 0;
+		if (SL_IS_STILL_PRESSED == NO_Condition)
+		{
+
+			// LCD_MoveCursor(1, 5);
+			// LCD_DisplayString((const uint8 *)"OFF");
+			LCD_MoveCursor(3,7);
+			LCD_DisplayString((const uint8 *)"   ");
+
+			SL_STATE = OFF;
+			SL_IS_STILL_PRESSED = YES_Condition;
+			counter++;
+
+		}
+
+		else if (counter != 1)
+		{
+		// LCD_MoveCursor(1, 5);
+		// LCD_DisplayString((const uint8 *)"ON ");
+		LCD_MoveCursor(3,8);
+		LCD_DisplayString((const uint8 *)"SL");
+		SL_STATE = ON;
+		counter = 0;
+		}
+		}
+			
+		
 
 
+	else
+	{
+		SL_IS_STILL_PRESSED = NO_Condition;
 
+
+	}
+				
+
+}

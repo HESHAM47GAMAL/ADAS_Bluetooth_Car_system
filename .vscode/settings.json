@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "lcd_interface.h": "c"
+    }
+}
