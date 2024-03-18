@@ -85,6 +85,9 @@ enum Speed_Limit_Status{Speed_Limit_Failed , Speed_Limit_Meet} ;
 
 uint8 Speed_limit_Current_Status = Speed_Limit_Failed;
 
+enum Distance_BA_status {Distance_BA_Failed , Distance_BA_Meet} ;
+uint8 Distance_BA_Current_status = Distance_BA_Failed;
+
 
 void StateMachineUpdate(void)
 {
@@ -238,6 +241,9 @@ static void DashBoard_Init(void)
     LCD_DisplayString((const uint8 * )" SL:");
     LCD_DisplayCharacter(POS_LCD_False_ICON);
 
+    LCD_DisplayString((const uint8 * )" DM:");
+    LCD_DisplayCharacter(POS_LCD_False_ICON);
+
     /*  call function that Display pages and @ first when start program I will be in Page 2 */
     APP_DashBoardPage_update();
     sei();
@@ -262,7 +268,7 @@ static void DashBoard_Update_CCS_State(uint8 ACCS_state)
     cli();
         
         /*  Go to index that display current GearBox state*/
-        LCD_MoveCursor(2,5);
+        LCD_MoveCursor(2,3);
         /*✍️LCD_SMALL_LARGE*/
         //LCD_MoveCursor(0,4);
 
@@ -280,7 +286,7 @@ static void DashBoard_Update_BrakingAssist_State(uint8 BA_state)
 {
     cli();
     /*  Go to index that display current GearBox state*/
-        LCD_MoveCursor(2,12);
+        LCD_MoveCursor(2,8);
             /*  Edit its state with new state given to function*/
         if(BA_state == BrakingAssist_Enable)
             LCD_DisplayCharacter(POS_LCD_Right_ICON);
@@ -298,7 +304,7 @@ static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
     // if(Page_Current_State == Page_2_LCD)
     // {
         /*  Go to index that display current GearBox state*/
-        LCD_MoveCursor(2,19);
+        LCD_MoveCursor(2,13);
         /*✍️LCD_SMALL_LARGE*/
         //LCD_MoveCursor(0,6);
 
@@ -312,6 +318,24 @@ static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
     sei();
 }
 
+static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state)
+{
+    cli();
+    /*  Go to index that display current Driving Monetoring state*/
+    LCD_MoveCursor(2,18);
+
+    if(DM_state == DirivingMonetoring_Enable)
+    {
+        LCD_DisplayCharacter(POS_LCD_Right_ICON);
+    }
+    else 
+    {
+        LCD_DisplayCharacter(POS_LCD_False_ICON);
+    }
+
+    sei();
+
+}
 
 static void DashBoard_updateSpeedLimitValue(void)
 {
@@ -386,10 +410,7 @@ static void DashBoard_SpeedLimit_status_update(void)
 }
 
 
-static void App_Relay_behavior_SpeedLimit(void)
-{
 
-}
 
 static void DashBoard_DistanceShow(void)
 {
@@ -408,13 +429,15 @@ static void DashBoard_DistanceHide(void)
 static void APP_DashBoardPage_update(void)
 {
     
-    uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
-    LCD_MoveCursor(3,9);
+    uint8 pages_option [4][4] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
+    cli();
+    LCD_MoveCursor(3,8);
     /*  Display indicator for current page  */
     LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
     LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
     LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
-    
+    LCD_DisplayCharacter(pages_option[Page_Current_State][3]);
+    sei();
 }
 
 
@@ -458,6 +481,10 @@ static void APP_DashBoard_SwitchPages(void)
         LCD_DisplayString("Status : ");
         /* update Icons of speed limit status  */
         DashBoard_SpeedLimit_status_update();
+    }
+    else if(Page_Current_State == Page_4_LCD)
+    {
+
     }
     sei();
 }
@@ -657,7 +684,7 @@ static void APP_KeypadUpdate(void)
         {
             R_Page_IsStillPressed = YES_Condition ;
             Page_Current_State++ ; /*   Move one right page*/
-            if(Page_Current_State == 3) /*  Exceed page 3 so it need to handle and return to page one  */
+            if(Page_Current_State == 4) /*  Exceed page 3 so it need to handle and return to page one  */
             {
                 Page_Current_State = Page_1_LCD ;
             }
@@ -686,7 +713,7 @@ static void APP_KeypadUpdate(void)
             Page_Current_State-- ; /*   Move one right page*/
             if(Page_Current_State == -1) /*  Exceed page 3 so it need to handle and return to page one  */
             {
-                Page_Current_State = Page_3_LCD ;
+                Page_Current_State = Page_4_LCD ;
             }
             /*  Call function that handle change in first two */
             APP_DashBoard_SwitchPages();

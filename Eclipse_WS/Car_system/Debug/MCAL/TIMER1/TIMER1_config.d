@@ -1,0 +1,4 @@
+MCAL/TIMER1/TIMER1_config.o MCAL/TIMER1/TIMER1_config.o:  \
+ ../MCAL/TIMER1/TIMER1_config.c ../MCAL/TIMER1/TIMER1_config.h
+
+../MCAL/TIMER1/TIMER1_config.h:

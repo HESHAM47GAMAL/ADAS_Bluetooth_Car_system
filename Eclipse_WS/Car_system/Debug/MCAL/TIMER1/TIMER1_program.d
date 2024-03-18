@@ -1,0 +1,24 @@
+MCAL/TIMER1/TIMER1_program.o MCAL/TIMER1/TIMER1_program.o:  \
+ ../MCAL/TIMER1/TIMER1_program.c ../MCAL/TIMER1/TIMER1_private.h \
+  ../MCAL/TIMER1/../../SERVICE/STD_TYPES.h \
+  ../MCAL/TIMER1/TIMER1_interface.h ../MCAL/TIMER1/TIMER1_config.h \
+  ../MCAL/TIMER1/../GPIO/GPIO_interface.h \
+  ../MCAL/TIMER1/../GPIO/../../SERVICE/STD_TYPES.h \
+  ../MCAL/TIMER1/../../SERVICE/COMMON_MACROS.h \
+  ../MCAL/TIMER1/../../SERVICE/IVT.h
+
+../MCAL/TIMER1/TIMER1_private.h:
+
+../MCAL/TIMER1/../../SERVICE/STD_TYPES.h:
+
+../MCAL/TIMER1/TIMER1_interface.h:
+
+../MCAL/TIMER1/TIMER1_config.h:
+
+../MCAL/TIMER1/../GPIO/GPIO_interface.h:
+
+../MCAL/TIMER1/../GPIO/../../SERVICE/STD_TYPES.h:
+
+../MCAL/TIMER1/../../SERVICE/COMMON_MACROS.h:
+
+../MCAL/TIMER1/../../SERVICE/IVT.h:
