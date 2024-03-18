@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "string.h": "c",
-        "lcd_interface.h": "c"
+        "lcd_interface.h": "c",
+        "application_interface.h": "c"
     }
 }

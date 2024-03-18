@@ -21,8 +21,8 @@
 enum E_LCD_PAGE
 {
 	E_LCD_PAGE_MAIN,
-	E_LCD_PAGE_SL,
 	E_LCD_PAGE_CCSBA,
+	E_LCD_PAGE_SL,
 	E_LCD_PAGE_INFO
 };
 
@@ -59,6 +59,22 @@ enum BA_STATE
 	E_BA_ON,
 	E_BA_OFF,
 	E_BA_RETURN_TO_ON
+
+};
+
+enum SL_STATE
+{
+	E_SL_ON,
+	E_SL_OFF,
+	E_SL_RETURN_TO_ON
+
+};
+
+enum CCS_STATE
+{
+	E_CCS_ON,
+	E_CCS_OFF,
+	E_CCS_RETURN_TO_ON
 
 };
 
@@ -147,34 +163,99 @@ void A_APPLICATION_VOID_INIT(void)
 /************************** LCD screen select function **************************/
 void A_APPLICATION_VOID_MAIN_LCD_SCREEN_SELECT()
 {
+	uint8 static  LOCAL_PLACEHOLDER1 = NO_Condition;
+	uint8 static  LOCAL_PLACEHOLDER2 = NO_Condition;
+	uint8 static  LOCAL_PLACEHOLDER3 = NO_Condition;
+	uint8 static  LOCAL_PLACEHOLDER4 = NO_Condition;
 
-	switch (LCD_PAGE_STATE)
+	if (LCD_PAGE_STATE == E_LCD_PAGE_CCSBA)
 	{
-	case E_LCD_PAGE_MAIN:
+		if (LCD_PAGE_STATE == E_LCD_PAGE_CCSBA)
+		{
+			if (LOCAL_PLACEHOLDER1 == 0)
+			{
+				A_APPLICATION_VOID_CCSBA_PAGE_DISPLAY();
+				LOCAL_PLACEHOLDER1 = 1;
 
-		break;
+			}
 
-	case E_LCD_PAGE_SL:
 
-		break;
+			else
+			{
+				LOCAL_PLACEHOLDER1 = 0;
+				A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
+			}
+		}
 
-	case E_LCD_PAGE_CCSBA:
-		// A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
-		// LCD_MoveCursor(0, 0);
-		// LCD_DisplayString((const uint8 *)"CCS : ");
-
-		// LCD_MoveCursor(1, 0);
-		// LCD_DisplayString((const uint8 *)"BA : ");
-
-		break;
-
-	case E_LCD_PAGE_INFO:
-
-		break;
-
-	default:
-		break;
 	}
+
+	if (LCD_PAGE_STATE == E_LCD_PAGE_INFO)
+	{
+		if (LCD_PAGE_STATE == E_LCD_PAGE_INFO)
+		{
+			if (LOCAL_PLACEHOLDER2 == 0)
+			{
+
+				LOCAL_PLACEHOLDER2 = 1;
+
+			}
+
+		}
+		else
+		{
+			LOCAL_PLACEHOLDER2 = 0;
+			A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
+		}
+	}
+
+
+
+	if (LCD_PAGE_STATE == E_LCD_PAGE_MAIN)
+	{
+		if (LCD_PAGE_STATE == E_LCD_PAGE_MAIN)
+		{
+			if (LOCAL_PLACEHOLDER3 == 0)
+			{
+
+				LOCAL_PLACEHOLDER3 = 1;
+
+			}
+
+		}
+		else
+		{
+			LOCAL_PLACEHOLDER3 = 0;
+			A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
+		}
+	}
+
+
+	if (LCD_PAGE_STATE == E_LCD_PAGE_SL)
+	{
+		if (LCD_PAGE_STATE == E_LCD_PAGE_SL)
+		{
+			if (LOCAL_PLACEHOLDER4 == 0)
+			{
+				A_APPLICATION_VOID_SL_PAGE_DISPLAY();
+				LOCAL_PLACEHOLDER4 = 1;
+
+			}
+
+
+		}
+		else
+		{
+			LOCAL_PLACEHOLDER4 = 0;
+			A_APPLICATION_VOID_LCD_VARIABLE_CLEAR();
+		}
+	}
+
+
+
+
+
+
+
 }
 
 /************************** Keypad button read check function **************************/
@@ -193,12 +274,12 @@ void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void)
 
 	if (KEYPAD_PRESSED == E_KEYPAD_CCS_TOG)
 	{
-		A_APPLICATION_VOID_BA_CHANGE();
+		A_APPLICATION_VOID_CCS_CHANGE();
 
 	}
 	else
 	{
-		BA_IS_STILL_PRESSED = NO_Condition;
+		CCS_IS_STILL_PRESSED = NO_Condition;
 
 	}
 
@@ -212,12 +293,6 @@ void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void)
 		SCREEN_LEFT_SCROLL_IS_STILL_PRESSED = NO_Condition;
 	}
 
-	if (KEYPAD_PRESSED == E_KEYPAD_GEARBOX)
-	{
-	}
-	else
-	{
-	}
 
 	if (KEYPAD_PRESSED == E_KEYPAD_RIGHT_PAGE)
 	{
@@ -237,8 +312,8 @@ void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void)
 
 	if (KEYPAD_PRESSED == E_KEYPAD_SPEED_LIMITER_TOG)
 	{
-			A_APPLICATION_VOID_SL_CHANGE();
-		
+		A_APPLICATION_VOID_SL_CHANGE();
+
 	}
 	else
 	{
@@ -255,18 +330,33 @@ void A_APPLICATION_VOID_KEYPAD_BUTTON_READ(void)
 	{
 	}
 
-	if (KEYPAD_PRESSED == '*')
+	if (KEYPAD_PRESSED == '*')// Brake assist one
 	{
-		LCD_MoveCursor(2, 2);
-		LCD_DisplayCharacter((KEYPAD_PRESSED + '0'));
+		A_APPLICATION_VOID_BA_CHANGE();
+
 	}
 	else
 	{
+		BA_IS_STILL_PRESSED = NO_Condition;
 	}
 }
 
 void A_APPLICATION_VOID_MAIN_LCD_LOAD(void)
 {
+	LCD_ClearScreen();
+
+	LCD_MoveCursor(0, 6);
+	LCD_DisplayString((const uint8 *)"WELCOME");
+	LCD_MoveCursor(1, 6);
+	LCD_DisplayString((const uint8 *)"  TO");
+	LCD_MoveCursor(2, 6);
+	LCD_DisplayString((const uint8 *)" YOUR");
+	LCD_MoveCursor(3, 6);
+	LCD_DisplayString((const uint8 *)"MERCEDES");
+	
+	_delay_ms(1000);
+
+	LCD_ClearScreen();
 	LCD_MoveCursor(3, 0);
 	LCD_DisplayString((const uint8 *)"CCS");
 
@@ -560,142 +650,154 @@ void A_APPLICATION_VOID_LCD_VARIABLE_CLEAR(void)
 
 void A_APPLICATION_VOID_BA_CHANGE(void)
 {
-
-	if (Keypad_GetPressedKey() == E_KEYPAD_CCS_TOG)
+if (BA_IS_STILL_PRESSED == NO_Condition)
 	{
-		uint8 static counter = 0;
-		if (BA_IS_STILL_PRESSED == NO_Condition)
+		BA_IS_STILL_PRESSED = YES_Condition;
+
+		BA_STATE++;
+
+		if (BA_STATE == E_BA_RETURN_TO_ON)
 		{
-
-			// LCD_MoveCursor(1, 5);
-			// LCD_DisplayString((const uint8 *)"OFF");
-			LCD_MoveCursor(3, 0);
-			LCD_DisplayString((const uint8 *)"   ");
-			LCD_MoveCursor(3, 4);
-			LCD_DisplayString((const uint8 *)"  ");
-			BA_STATE = OFF;
-			CCS_STATE = OFF;
-			BA_IS_STILL_PRESSED = YES_Condition;
-			counter++;
-
+			BA_STATE = E_BA_ON;
 		}
 
-		else if (counter != 1)
-		{
-		// LCD_MoveCursor(1, 5);
-		// LCD_DisplayString((const uint8 *)"ON ");
-		LCD_MoveCursor(3, 0);
-		LCD_DisplayString((const uint8 *)"CCS");
-		LCD_MoveCursor(3, 4);
-		LCD_DisplayString((const uint8 *)"BA");
-		BA_STATE = ON;
-		CCS_STATE = OFF;
-		counter = 0;
-		}
-		}
-			
-		
-
-
-	else
-	{
-		BA_IS_STILL_PRESSED = NO_Condition;
-
-
+		A_APPLICATION_VOID_BA_DISPLAY(BA_STATE);
 	}
-				
+
 
 }
+
+void A_APPLICATION_VOID_BA_DISPLAY(uint8 state)
+{
+
+	switch (state)
+	{
+	case E_BA_ON:
+
+		LCD_MoveCursor(3,5);
+		LCD_DisplayString((const uint8 *)"  ");
+
+		break;
+	case E_BA_OFF:
+
+		LCD_MoveCursor(3,5);
+ 		LCD_DisplayString((const uint8 *)"BA");
+
+		break;
+	}
+}
+
 
 
 void A_APPLICATION_VOID_CCS_CHANGE(void)
 {
 
-	if (Keypad_GetPressedKey() == E_KEYPAD_CCS_TOG)
+if (CCS_IS_STILL_PRESSED == NO_Condition)
 	{
-		uint8 static counter = 0;
-		if (BA_IS_STILL_PRESSED == NO_Condition)
+		CCS_IS_STILL_PRESSED = YES_Condition;
+
+		CCS_STATE++;
+
+		if (CCS_STATE == E_CCS_RETURN_TO_ON)
 		{
-
-			// LCD_MoveCursor(1, 5);
-			// LCD_DisplayString((const uint8 *)"OFF");
-			LCD_MoveCursor(3, 0);
-			LCD_DisplayString((const uint8 *)"   ");
-			LCD_MoveCursor(3, 4);
-			LCD_DisplayString((const uint8 *)"  ");
-			CCS_STATE = OFF;
-			BA_IS_STILL_PRESSED = YES_Condition;
-			counter++;
-
+			CCS_STATE = E_CCS_ON;
 		}
 
-		else if (counter != 1)
-		{
-		// LCD_MoveCursor(1, 5);
-		// LCD_DisplayString((const uint8 *)"ON ");
-		LCD_MoveCursor(3, 0);
-		LCD_DisplayString((const uint8 *)"CCS");
-		LCD_MoveCursor(3, 4);
-		LCD_DisplayString((const uint8 *)"BA");
-		CCS_STATE = ON;
-		counter = 0;
-		}
-		}
-			
-		
-
-
-	else
-	{
-		BA_IS_STILL_PRESSED = NO_Condition;
-
-
+		A_APPLICATION_VOID_CCS_DISPLAY(CCS_STATE);
 	}
-				
 
+
+}
+
+void A_APPLICATION_VOID_CCS_DISPLAY(uint8 state)
+{
+
+	switch (state)
+	{
+	case E_CCS_ON:
+
+		LCD_MoveCursor(3,0);
+		LCD_DisplayString((const uint8 *)"   ");
+
+		break;
+	case E_CCS_OFF:
+
+		LCD_MoveCursor(3,0);
+ 		LCD_DisplayString((const uint8 *)"CCS");
+
+		break;
+	}
 }
 
 
 void A_APPLICATION_VOID_SL_CHANGE(void)
 {
 
-	if (Keypad_GetPressedKey() == E_KEYPAD_SPEED_LIMITER_TOG)
+	if (SL_IS_STILL_PRESSED == NO_Condition)
 	{
-		uint8 static counter = 0;
-		if (SL_IS_STILL_PRESSED == NO_Condition)
+		SL_IS_STILL_PRESSED = YES_Condition;
+
+		BA_STATE++;
+
+		if (BA_STATE == E_SL_RETURN_TO_ON)
 		{
-
-			// LCD_MoveCursor(1, 5);
-			// LCD_DisplayString((const uint8 *)"OFF");
-			LCD_MoveCursor(3,7);
-			LCD_DisplayString((const uint8 *)"   ");
-
-			SL_STATE = OFF;
-			SL_IS_STILL_PRESSED = YES_Condition;
-			counter++;
-
+			BA_STATE = E_SL_ON;
 		}
 
-		else if (counter != 1)
-		{
-		// LCD_MoveCursor(1, 5);
-		// LCD_DisplayString((const uint8 *)"ON ");
-		LCD_MoveCursor(3,8);
-		LCD_DisplayString((const uint8 *)"SL");
-		SL_STATE = ON;
-		counter = 0;
-		}
-		}
-			
-		
-
-
-	else
-	{
-		SL_IS_STILL_PRESSED = NO_Condition;
-
-
+		A_APPLICATION_VOID_SL_DISPLAY(BA_STATE);
 	}
-				
+}
+void A_APPLICATION_VOID_SL_DISPLAY(uint8 state)
+{
+
+	switch (state)
+	{
+	case E_BA_ON:
+
+		LCD_MoveCursor(3,7);
+		LCD_DisplayString((const uint8 *)"   ");
+
+		break;
+	case E_BA_OFF:
+
+		LCD_MoveCursor(3,8);
+ 		LCD_DisplayString((const uint8 *)"SL");
+
+		break;
+	}
+}
+
+void A_APPLICATION_VOID_CCSBA_PAGE_DISPLAY(void)
+{
+		LCD_MoveCursor(0,0);
+ 		LCD_DisplayString((const uint8 *)"CCS :");
+		LCD_MoveCursor(1,0);
+ 		LCD_DisplayString((const uint8 *)"BA :");
+
+
 
 }
+void A_APPLICATION_VOID_CCSBA_PAGE_UPDATE(uint8 state)
+{
+
+	
+}
+
+void A_APPLICATION_VOID_SL_PAGE_DISPLAY(void)
+{
+		LCD_MoveCursor(0,0);
+ 		LCD_DisplayString((const uint8 *)"SL :");
+		LCD_MoveCursor(1,0);
+ 		LCD_DisplayString((const uint8 *)"DST    m:");
+
+
+
+}
+void A_APPLICATION_VOID_SL_PAGE_UPDATE(uint8 state)
+{
+
+	
+}
+
+
+

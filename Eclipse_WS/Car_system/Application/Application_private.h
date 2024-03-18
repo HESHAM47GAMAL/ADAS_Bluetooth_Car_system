@@ -142,9 +142,11 @@ void A_APPLICATION_VOID_GBX_DISPLAY_L2R(uint8 state);
 void A_APPLICATION_VOID_GBX_DISPLAY_L2R(uint8 state);
 
 
+
+
 /*
-*   @ Brief : this function is For changing the gearbox state
-*   @ Arguments :   void
+*   @ Brief : this function is For Displaying which gear on lcd
+*   @ Arguments :   which gearbox state we are in
 *   @ Returns : no return
 *   @ Synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
@@ -160,19 +162,50 @@ void A_APPLICATION_VOID_GBX_CHANGE(void);
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 
-void A_APPLICATION_VOID_BA_CHANGE(void);
 
+void A_APPLICATION_VOID_GBX_DISPLAY(uint8 state);
 
 /*
-*   @ Brief : this function is For changing the CCS state
+*   @ Brief : this function is For changing the gearbox state
 *   @ Arguments :   void
 *   @ Returns : no return
 *   @ Synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 
+
+void A_APPLICATION_VOID_BA_CHANGE(void);
+
+/*
+*   @ Brief : this function is For Displaying BA mode on lcd
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_BA_DISPLAY(uint8);
+
+
+/*
+*   @ Brief : this function is For changing the BA state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+
+
 void A_APPLICATION_VOID_CCS_CHANGE(void);
 
+/*
+*   @ Brief : this function is For Displaying SL mode on lcd
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_CCS_DISPLAY(uint8);
 
 /*
 *   @ Brief : this function is For changing the SL state
@@ -183,6 +216,93 @@ void A_APPLICATION_VOID_CCS_CHANGE(void);
 */
 
 void A_APPLICATION_VOID_SL_CHANGE(void);
+
+
+/*
+*   @ Brief : this function is For Displaying SL mode on lcd
+*   @ Arguments :   which gearbox state we are in
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_SL_DISPLAY(uint8);
+
+
+/*
+*   @ Brief : this function is For changing the BA state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_BA_CHANGE(void);
+
+
+
+
+
+
+
+
+/*
+*   @ Brief : this function is For Displaying the CCSBA page
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+
+void A_APPLICATION_VOID_CCSBA_PAGE_DISPLAY(void);
+
+/*
+*   @ Brief : this function is For updating the CCSBA page
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_CCSBA_PAGE_UPDATE(uint8);
+
+
+
+
+/*
+*   @ Brief : this function is For Displaying the SL page
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_SL_PAGE_DISPLAY(void);
+
+
+
+/*
+*   @ Brief : this function is For updating the SL page
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_SL_PAGE_UPDATE(uint8);
+
+
+
+
+
+
+
+/*
+*   @ Brief : this function is For Displaying the BA state
+*   @ Arguments :   void
+*   @ Returns : no return
+*   @ Synchronous / Asynchronous : Synchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+void A_APPLICATION_VOID_BA_DISPLAY(uint8);
+
+
 
 
 
