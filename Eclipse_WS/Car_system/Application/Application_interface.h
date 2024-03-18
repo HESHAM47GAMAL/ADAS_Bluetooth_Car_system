@@ -49,6 +49,10 @@
 #define Yellow_LED_PIN              PIN6_ID
 
 
+#define Relay_PORT                  PORTC_ID
+#define Relay_PIN                   PIN7_ID
+
+
 #define BTN_Pressed_State           LOGIC_LOW
 #define BTN_Released_State          LOGIC_HIGH
 

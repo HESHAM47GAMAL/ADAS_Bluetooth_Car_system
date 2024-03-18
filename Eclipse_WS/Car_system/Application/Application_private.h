@@ -24,13 +24,14 @@
 #define Keypad_SpeedLimit_Dec_pressed_value     7
 #define Keypad_SpeedLimit_ON_OFF_pressed_value  8
 #define Keypad_SpeedLimit_Inc_pressed_value     9
+#define Keypad_BrakingAssist_pressed_value      '*'
 
 
 #define MAX_CAR_SPEED                           200 
 
 /**************************                   Function Prototype                   **************************/
 
-
+/***************************Gear BOX Functions*****************************/
 
 /*
 *   @brief : this function used to handle All action may happen In N GearBox mode
@@ -74,6 +75,10 @@ static void Hanndle_GrearBox_D_State(void);
 */
 static void Buttons_Update(void);
 
+
+
+
+/***************************Bashboard*****************************/
 /*
 *   @brief : this function used to initialize what will be displayed in DashBoard(LCD) 
 *   @args  void
@@ -103,6 +108,29 @@ static void Buttons_Update(void);
  static void DashBoard_Update_CCS_State(uint8 ACCS_state);
 
 
+ 
+ static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
+
+ static void DashBoard_Update_BrakingAssist_State(uint8 BA_state);
+
+
+ static void APP_DashBoardPage_update(void);
+
+
+static void DashBoard_updateSpeedLimitValue(void);
+
+
+static void APP_DashBoard_SwitchPages(void);
+
+static void App_GetDiffCarSpeed_and_limit(void);
+
+/*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
+static void DashBoard_SpeedLimit_status_update(void);
+
+static void App_Relay_behavior_SpeedLimit(void);
+
+
+
 /*
 *   @brief : this function used to Show only "Distance : " in LCD
 *   @args  void
@@ -125,9 +153,6 @@ static void Buttons_Update(void);
 
 
 
- static void DashBoard_Handle_Page(void);
-
-
 /*
 *   @brief : this function is program that will be called (ISR) when Braking Button pressed 
 *   @args  void
@@ -136,6 +161,12 @@ static void Buttons_Update(void);
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 static void Braking_Button_Handling(void);
+
+/*  This only function used with brake ISR that to make push to it in stack and when same ISR happen make context switch and return to function */
+/*  Try to Ask Eng Mohamed Helmy    */
+
+void tessst (void);
+
 
 
 /*
@@ -171,10 +202,6 @@ static void ACCS_CatchDistance(void);
 
 static void ACCS_DicisionTake(void);
 
-/*  This only function used with brake ISR that to make push to it in stack and when same ISR happen make context switch and return to function */
-/*  Try to Ask Eng Mohamed Helmy    */
-
-void tessst (void);
 
 
 static void ACCS_PID(uint8 braking_value);
@@ -182,12 +209,9 @@ static void ACCS_PID(uint8 braking_value);
 
 static void APP_KeypadUpdate(void);
 
-static void APP_DashBoardPage_update(void);
-
-static void APP_DashBoard_SwitchPages(void);
 
 
-static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
+static void App_SpeedUpdate(void);
 
 
 

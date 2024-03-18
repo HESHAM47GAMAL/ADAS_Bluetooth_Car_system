@@ -1,26 +1,35 @@
-10:38:41 **** Incremental Build of configuration Debug for project Car_system ****
+06:44:29 **** Incremental Build of configuration Debug for project Car_system ****
 make all 
 Building file: ../Application/Application_program.c
 Invoking: AVR Compiler
 avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
+../Application/Application_program.c: In function 'DashBoard_updateSpeedLimitValue':
+../Application/Application_program.c:319: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'APP_DashBoard_SwitchPages':
+../Application/Application_program.c:422: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:424: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:435: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:437: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:442: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:449: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:451: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:453: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: In function 'APP_KeypadUpdate':
-../Application/Application_program.c:272: warning: unused variable 'SL_DecIsStillPressed'
-../Application/Application_program.c:270: warning: unused variable 'SL_IncIsStillPressed'
+../Application/Application_program.c:477: warning: unused variable 'SL_DecIsStillPressed'
+../Application/Application_program.c:475: warning: unused variable 'SL_IncIsStillPressed'
 ../Application/Application_program.c: In function 'ACCS_CatchDistance':
-../Application/Application_program.c:795: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:1014: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'App_SpeedUpdate':
+../Application/Application_program.c:1107: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: At top level:
-../Application/Application_program.c:512: warning: 'Hanndle_GrearBox_D_State' defined but not used
-../Application/Application_private.h:75: warning: 'Buttons_Update' declared 'static' but never defined
-../Application/Application_program.c:199: warning: 'DashBoard_DistanceShow' defined but not used
-../Application/Application_program.c:206: warning: 'DashBoard_DistanceHide' defined but not used
-../Application/Application_program.c:668: warning: 'DashBoard_Handle_Page' defined but not used
-../Application/Application_program.c:777: warning: 'ACCS_CatchDistance' defined but not used
-../Application/Application_program.c:802: warning: 'ACCS_DicisionTake' defined but not used
-../Application/Application_private.h:180: warning: 'ACCS_PID' declared 'static' but never defined
-../Application/Application_program.c:239: warning: 'APP_DashBoard_SwitchPages' defined but not used
-../Application/Application_program.c:876: warning: 'DashBoard_Init_small' defined but not used
-../Application/Application_program.c:897: warning: 'DashBoard_Update_GearBox_state_small' defined but not used
-../Application/Application_program.c:922: warning: 'APP_DashBoardPage_update_small' defined but not used
+../Application/Application_program.c:100: warning: 'Hanndle_GrearBox_D_State' defined but not used
+../Application/Application_private.h:76: warning: 'Buttons_Update' declared 'static' but never defined
+../Application/Application_program.c:390: warning: 'DashBoard_DistanceShow' defined but not used
+../Application/Application_program.c:397: warning: 'DashBoard_DistanceHide' defined but not used
+../Application/Application_program.c:996: warning: 'ACCS_CatchDistance' defined but not used
+../Application/Application_program.c:1021: warning: 'ACCS_DicisionTake' defined but not used
+../Application/Application_private.h:205: warning: 'ACCS_PID' declared 'static' but never defined
+../Application/Application_program.c:385: warning: 'App_Relay_behavior_SpeedLimit' defined but not used
 Finished building: ../Application/Application_program.c
  
 Building target: Car_system.elf
@@ -42,15 +51,15 @@ AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   18536 bytes (113.1% Full)
+Program:   19058 bytes (116.3% Full)
 (.text + .data + .bootloader)
 
-Data:        501 bytes (48.9% Full)
+Data:        565 bytes (55.2% Full)
 (.data + .bss + .noinit)
 
 
 Finished building: sizedummy
  
 
-10:38:41 Build Finished. 0 errors, 15 warnings. (took 774ms)
+06:44:30 Build Finished. 0 errors, 21 warnings. (took 796ms)
 
