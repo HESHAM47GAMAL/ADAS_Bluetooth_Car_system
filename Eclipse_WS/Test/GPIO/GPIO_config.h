@@ -28,7 +28,7 @@
 
 
 /**************************                   Definitions macro                   **************************/
-#define Configuration_NUM 				2
+#define Configuration_NUM 				3
 
 
 // Here write all configuration you want for pins
@@ -37,6 +37,7 @@ GPIO_PORT_PIN_config GPIO_configParam [Configuration_NUM] = {
 
 		{PORTA_ID , PINS_ALL , INPUT_PORT}, //0
 		{PORTB_ID , PINS_ALL , INPUT_PORT}, //0
+		{PORTC_ID , PIN7_ID , OUTPUT_PIN}, //
 
 
 

@@ -69,7 +69,6 @@ uint8 SpeedLimit_Current__State = SpeedLimit_Disable ;
 
 uint8 BrakingAssist_Current_State = BrakingAssist_Disable;
 
-uint8 DirivingMonetoring_Current_State = DirivingMonetoring_Disable ;
 
 volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
@@ -86,7 +85,25 @@ enum Speed_Limit_Status{Speed_Limit_Failed , Speed_Limit_Meet} ;
 uint8 Speed_limit_Current_Status = Speed_Limit_Failed;
 
 enum Distance_BA_status {Distance_BA_Failed , Distance_BA_Meet} ;
+
 uint8 Distance_BA_Current_status = Distance_BA_Failed;
+
+uint8 DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
+
+enum DrivingMonetoring_Status {DM_Failed    ,   DM_Meet};
+//                            make alarm       don't make alarm     
+uint8  DrivingMonetoring_Current_Status = DM_Meet ;
+
+/* Carry number of interrupt happen for TImer 1 */
+uint8 TimeOut_Counter = 0 ;
+
+
+uint8 Clock_sec = 12; 
+uint8 Clock_min = 30 ;
+uint8 Clock_hour = 2 ;
+
+
+float32 Accumulative_Distance = 0 ;
 
 
 void StateMachineUpdate(void)
@@ -99,6 +116,10 @@ void StateMachineUpdate(void)
     APP_KeypadUpdate();
     App_SpeedUpdate ();
     App_GetDiffCarSpeed_and_limit();
+    /*  make continous update for dashboard if I in page 2   */
+    DashBoard_DrivingMonetoring_continous_Status_update();
+    /*  used to update time if I in page 4*/
+    DashBoard_updateTime();
 
 }
 
@@ -153,6 +174,25 @@ static void Hanndle_GrearBox_R_State(void)
             //DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();
         }
+
+        if(DrivingMonetoring_Current_State == DirivingMonetoring_Enable)
+        {
+            DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
+            /*  Update in LCD */
+            DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
+
+        }
+
+        /*  If it was Speed Limiter enabled should disabled and update in LCD*/
+        if(SpeedLimit_Current__State == SpeedLimit_Enable)
+        {
+            /*  Disable BA Sysystem */
+            SpeedLimit_Current__State = SpeedLimit_Disable ;
+            
+            /*  Update LCD with new change*/
+            DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+        }
+
     }
 }
 
@@ -203,6 +243,14 @@ void App_Init(void)
     /*  Set callback function that will called when Timeout happen to turn of buzzer and handle anything another    */
     Timer0_SetCallBack(Buzzer_timeOutOff);
 
+    /*  Initailize Timer 1*/
+    Timer1_Init();
+
+    /*  Set callback for finction that will hanle DM and Time */
+    Timer1_SetCallBack(App_TimeOut_handle_DM_Time);
+
+    Timer1_ProvideClock();
+
     /*  Initialize ADC to be used by Potentiometer to accelerate  */
     ADC_Init();
 
@@ -222,6 +270,11 @@ void App_Init(void)
 static void DashBoard_Init(void)
 {
     cli();
+    LCD_MoveCursor(0,0);
+    LCD_DisplayString((const uint8 * )"DM Status:");
+    /*  call function that will handle status for DM  */
+    DashBoard_DrivingMonetoring_Status_update();
+
     /*  Display GearBox Current state  */
     LCD_MoveCursor(0,14);
     LCD_DisplayString((const uint8 * )"GB : N");
@@ -318,24 +371,6 @@ static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
     sei();
 }
 
-static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state)
-{
-    cli();
-    /*  Go to index that display current Driving Monetoring state*/
-    LCD_MoveCursor(2,18);
-
-    if(DM_state == DirivingMonetoring_Enable)
-    {
-        LCD_DisplayCharacter(POS_LCD_Right_ICON);
-    }
-    else 
-    {
-        LCD_DisplayCharacter(POS_LCD_False_ICON);
-    }
-
-    sei();
-
-}
 
 static void DashBoard_updateSpeedLimitValue(void)
 {
@@ -409,6 +444,55 @@ static void DashBoard_SpeedLimit_status_update(void)
     // }
 }
 
+static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state)
+{
+    cli();
+    /*  Go to index that display current Driving Monetoring state*/
+    LCD_MoveCursor(2,18);
+
+    if(DM_state == DirivingMonetoring_Enable)
+    {
+        LCD_DisplayCharacter(POS_LCD_Right_ICON);
+    }
+    else 
+    {
+        LCD_DisplayCharacter(POS_LCD_False_ICON);
+    }
+
+    sei();
+
+}
+
+static void DashBoard_DrivingMonetoring_Status_update(void)
+{
+    cli();
+    // اكتب ام الفانكشن ده لما تيجي 👀👀
+    LCD_MoveCursor(0,10);
+    if(DrivingMonetoring_Current_State == DirivingMonetoring_Enable)
+    {
+        if(DrivingMonetoring_Current_Status == DM_Meet)
+        {
+            LCD_DisplayCharacter(POS_LCD_Mute_ICON);
+        }
+        else
+        {
+            LCD_DisplayCharacter(POS_LCD_Alarm_ICON);
+        }
+    }
+    else
+    {
+        LCD_DisplayCharacter('D'); //system disabled
+    }
+    sei();
+}
+
+static void DashBoard_DrivingMonetoring_continous_Status_update(void)
+{
+    if(Page_Current_State == Page_2_LCD)
+    {
+        DashBoard_DrivingMonetoring_Status_update();
+    }
+}
 
 
 
@@ -453,7 +537,11 @@ static void APP_DashBoard_SwitchPages(void)
     /*  Main window that I start with  */
     if(Page_Current_State == Page_2_LCD)
     {
-        /*  Clear parts not needed */
+        /*  display data for Driving monetoring */
+        LCD_MoveCursor(0,0);
+        LCD_DisplayString((const uint8 * )"DM Status:");
+        /*  Call function that will handle status for DM */
+        DashBoard_DrivingMonetoring_Status_update();
     }
     else if(Page_Current_State == Page_1_LCD)
     {
@@ -484,6 +572,9 @@ static void APP_DashBoard_SwitchPages(void)
     }
     else if(Page_Current_State == Page_4_LCD)
     {
+        LCD_MoveCursor(0,0);
+        LCD_DisplayString("D=18/3/2024");
+        DashBoard_updateTime();
 
     }
     sei();
@@ -510,6 +601,8 @@ static void APP_KeypadUpdate(void)
 
     static uint8 BrakingAssit_IsStillPressed = NO_Condition ;
 
+    static uint8 DrivingMonetoring_IsStillPressed = NO_Condition ;
+
     volatile sint8 local_currentValue_keypad = Keypad_GetPressedKey();/* Take last keypad pressed button */
     /*  This if used to see only value of button pressed in Keypad  */
     // if(local_currentValue_keypad >= 0 )
@@ -531,9 +624,14 @@ static void APP_KeypadUpdate(void)
 /* (Button 1️⃣) Handle GearBox Button   */
 
     /*  👀👀👀👀👀👀GearBox switch only happen when press on gearbox and brake button in same time  */
-    // if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
-    if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
+    if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
+    // if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
     {
+        /*  Make counter with zero to start count from zero for DM */
+        TimeOut_Counter = 0 ;
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
+
         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
         if(GearBox_IsStillPressed == NO_Condition)
         {
@@ -568,6 +666,11 @@ static void APP_KeypadUpdate(void)
 /* (Button 2️⃣) Handle Cruise Control system   */
         if(local_currentValue_keypad == Keypad_CCS_pressed_value) 
         {
+            /*  Make counter with zero to start count from zero for DM */
+            TimeOut_Counter = 0 ;
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ;
+
             /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
             if(CCS_IsStillPressed == NO_Condition)
             {
@@ -612,6 +715,12 @@ static void APP_KeypadUpdate(void)
         /*  Handle Speed Limiter System Button   */
         if(local_currentValue_keypad == Keypad_SpeedLimit_ON_OFF_pressed_value) 
         {
+            /*  Make counter with zero to start count from zero for DM */
+            TimeOut_Counter = 0 ;
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ; 
+
+
             /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
             if(SL_ON_OFFIsStillPressed == NO_Condition)
             {
@@ -645,6 +754,11 @@ static void APP_KeypadUpdate(void)
 /* (Button 4️⃣) Handle Braking Assist system   */
         if(local_currentValue_keypad == Keypad_BrakingAssist_pressed_value)
         {
+            /*  Make counter with zero to start count from zero for DM */
+            TimeOut_Counter = 0 ;
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ;
+
             if(BrakingAssit_IsStillPressed == NO_Condition)
             {
                 BrakingAssit_IsStillPressed = YES_Condition ;
@@ -674,12 +788,60 @@ static void APP_KeypadUpdate(void)
             BrakingAssit_IsStillPressed = NO_Condition ;
         }
 
+        /* (Button 10) Handle Driving monetoring Button   */
+        if(local_currentValue_keypad == Keypad_DrivingMonetoring_pressed_value)
+        {
+            if(DrivingMonetoring_IsStillPressed == NO_Condition)
+            {
+                DrivingMonetoring_IsStillPressed = YES_Condition ;
+
+                /* turn buzzer on and give timer 0 clock and set timeout    */
+                Buzzer_NotifySound();
+                
+                if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
+                {
+                    DrivingMonetoring_Current_State = DirivingMonetoring_Enable ;
+                    /*  Update in LCD   */
+                    DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
+                    
+                    /*  Provide clock to Timer 1 to start count  */
+                    Timer1_ProvideClock();
+                    /*  Load timer with value that when overflow occur will happen after 1 second  */
+                    Timer1_UpdateValue(Value_Loading_Timer1);
+
+                    /*  Make counter start from zero Again  */
+                    TimeOut_Counter = 0 ;
+
+                    /*  intialize that will meeting state at first  */
+                    DrivingMonetoring_Current_Status = DM_Meet ;
+                }  
+                else
+                {
+                    DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
+                    /*  Update in LCD */
+                    DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
+                    
+
+                } 
+                
+            }
+        }
+        else
+        {
+            DrivingMonetoring_IsStillPressed = NO_Condition ;
+        }
+
     }
 
 /* (Button 5️⃣) Handle switch to right screen   */
     /*  ⚠️⚠️⚠️⚠️ I think that is critical section   */
     if(local_currentValue_keypad == Keypad_Page_R_pressed_value)
     {
+        /*  Make counter with zero to start count from zero for DM */
+        TimeOut_Counter = 0 ;
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
+
         if(R_Page_IsStillPressed == NO_Condition)
         {
             R_Page_IsStillPressed = YES_Condition ;
@@ -707,6 +869,11 @@ static void APP_KeypadUpdate(void)
     /*  ⚠️⚠️⚠️⚠️ I think that is critical section   */
     if(local_currentValue_keypad == Keypad_Page_L_pressed_value)
     {
+        /*  Make counter with zero to start count from zero for DM */
+        TimeOut_Counter = 0 ;
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
+
         if(L_Page_IsStillPressed == NO_Condition)
         {
             L_Page_IsStillPressed = YES_Condition ;
@@ -736,10 +903,17 @@ static void APP_KeypadUpdate(void)
     static uint8 SL_INC_repeation = 0 ;
     if(local_currentValue_keypad == Keypad_SpeedLimit_Inc_pressed_value)
     {
+        /*  Make counter with zero to start count from zero for DM */
+        TimeOut_Counter = 0 ;
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
         if(SL_FirstTime_INC == YES_Condition )
         {
-            Global_Speed_Limiter_value += 5; 
-            SL_FirstTime_INC = NO_Condition ;
+            if(Global_Speed_Limiter_value < Max_Speed_Limit_value)
+            {
+                Global_Speed_Limiter_value += 5; 
+            }
+                SL_FirstTime_INC = NO_Condition ;
         }
         else /* Enter it when SL_FirstTime_INC = NO_Condition   */
         {
@@ -748,7 +922,10 @@ static void APP_KeypadUpdate(void)
             {
                 SL_INC_repeation = 0;
                 /*   Increase Global_Speed_Limiter_value variable by 5  */
-                Global_Speed_Limiter_value += 5; 
+                if(Global_Speed_Limiter_value < Max_Speed_Limit_value)
+                {
+                    Global_Speed_Limiter_value += 5; 
+                }
             }
         }
         /*🙆‍♂️🙆‍♂️🙆‍♂️🙆‍♂️*/
@@ -769,9 +946,17 @@ static void APP_KeypadUpdate(void)
     static uint8 SL_DEC_repeation = 0 ;
     if(local_currentValue_keypad == Keypad_SpeedLimit_Dec_pressed_value)
     {
+        /*  Make counter with zero to start count from zero for DM */
+        TimeOut_Counter = 0 ;
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
+
         if(SL_FirstTime_DEC == YES_Condition )
         {
-            Global_Speed_Limiter_value -= 5; 
+            if(Global_Speed_Limiter_value > Min_speed_Limit_value)
+            {
+                Global_Speed_Limiter_value -= 5;    
+            }
             SL_FirstTime_DEC = NO_Condition ;
         }
         else /* Enter it when SL_FirstTime_INC = NO_Condition   */
@@ -781,7 +966,10 @@ static void APP_KeypadUpdate(void)
             {
                 SL_DEC_repeation = 0;
                 /*   Increase Global_Speed_Limiter_value variable by 5  */
-                Global_Speed_Limiter_value -= 5; 
+                if(Global_Speed_Limiter_value > Min_speed_Limit_value)
+                {
+                    Global_Speed_Limiter_value -= 5;    
+                }
             }
         }
         /*🙆‍♂️🙆‍♂️🙆‍♂️🙆‍♂️*/
@@ -794,6 +982,9 @@ static void APP_KeypadUpdate(void)
         SL_DEC_repeation = 0;
 
     }
+
+
+
 
     
 }
@@ -996,6 +1187,12 @@ void tessst (void)
             // DashBoard_DistanceHide();
             //DashBoard_DistanceHide_small();
 
+
+            /*  Make counter with zero to start count from zero for DM */
+            TimeOut_Counter = 0 ;
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ;
+
         }
 }
 
@@ -1021,8 +1218,57 @@ void Buzzer_timeOutOff(void)
 }
 
 
+static void App_TimeOut_handle_DM_Time(void)
+{
+    /*  Increament by one*/
+    TimeOut_Counter++;
+    Timer1_UpdateValue(Value_Loading_Timer1);
+
+    /*  No need to increment this variable as DM disabled  */
+    if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
+    {
+        TimeOut_Counter = 0 ;
+    }
+
+    if(TimeOut_Counter == 5)
+    {
+        TimeOut_Counter = 0;
+        /*  Here happen time out that it may be user is in Sleep  */
+        DrivingMonetoring_Current_Status = DM_Failed ;
+
+    }
+
+    Clock_sec ++ ;
+    if(Clock_sec == 60)
+    {
+        Clock_sec =  0 ;
+        Clock_min ++;
+    }
+    if(Clock_min == 60)
+    {
+        Clock_min = 0 ;
+        Clock_hour ++;
+    }
+
+    /*  Display total distance  */
+    Accumulative_Distance += (Car_Speed / 100.0);
 
 
+}
+
+static void DashBoard_updateTime(void)
+{
+    if(Page_Current_State == Page_4_LCD)
+    {
+        LCD_MoveCursor(1,0);
+        LCD_DisplayString("T=");
+        LCD_intToString(Clock_hour);
+        LCD_DisplayCharacter(':');
+        LCD_intToString(Clock_min);
+        LCD_DisplayCharacter(':');
+        LCD_intToString(Clock_sec);
+    }
+}
 
 static void ACCS_CatchDistance(void)
 {
@@ -1130,6 +1376,11 @@ static void App_SpeedUpdate(void)
     if((Diff_between_ADCS > 19) || (Diff_between_ADCS < -19)) // by try found that potentiometer in real life its value vary with max change = 15 so I want change greater than 25 in CCR or CR to accept it as human change not noise in potentiometer
     {
         Car_Speed = Temp_Speed ;
+        if(CCS_Currnet_state == CCS_Enable)
+        {
+            CCS_Currnet_state = CCS_Disable ;
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
+        }
     }
         cli();
         LCD_MoveCursor(1,14);

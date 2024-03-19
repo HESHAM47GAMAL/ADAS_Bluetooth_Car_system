@@ -25,9 +25,16 @@
 #define Keypad_SpeedLimit_ON_OFF_pressed_value  8
 #define Keypad_SpeedLimit_Inc_pressed_value     9
 #define Keypad_BrakingAssist_pressed_value      '*'
+#define Keypad_DrivingMonetoring_pressed_value  '#'
 
 
 #define MAX_CAR_SPEED                           200 
+
+#define Max_Speed_Limit_value                   120
+#define Min_speed_Limit_value                   20
+
+
+#define Value_Loading_Timer1                    ((uint16)57723)
 
 /**************************                   Function Prototype                   **************************/
 
@@ -111,23 +118,35 @@ static void Buttons_Update(void);
  
  static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
 
+ static void DashBoard_updateSpeedLimitValue(void);
+
+ /*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
+ static void DashBoard_SpeedLimit_status_update(void);
+ 
  static void DashBoard_Update_BrakingAssist_State(uint8 BA_state);
 
 
+
+
  static void APP_DashBoardPage_update(void);
-
-
-static void DashBoard_updateSpeedLimitValue(void);
 
 
 static void APP_DashBoard_SwitchPages(void);
 
 static void App_GetDiffCarSpeed_and_limit(void);
 
-/*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
-static void DashBoard_SpeedLimit_status_update(void);
 
-static void App_Relay_behavior_SpeedLimit(void);
+
+static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state);
+
+
+static void DashBoard_DrivingMonetoring_Status_update(void);
+
+static void DashBoard_DrivingMonetoring_continous_Status_update(void);
+
+
+
+static void DashBoard_updateTime(void);
 
 
 
@@ -213,6 +232,8 @@ static void APP_KeypadUpdate(void);
 
 static void App_SpeedUpdate(void);
 
+
+static void App_TimeOut_handle_DM_Time(void);
 
 
 /**************************************  For Small LCD ***********************/

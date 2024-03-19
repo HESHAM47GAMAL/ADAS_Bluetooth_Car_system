@@ -14,7 +14,7 @@
      <ITEM name="Version">100</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="780" x="1069" flags="00008033" y="827" h="360" pid="1" iid="-1">
+   <POPUP w="780" x="1022" flags="00000032" y="660" h="360" pid="1" iid="-1">
     <PROPERTIES>
      <ITEM name="Address Column Width">82</ITEM>
      <ITEM name="AutoResize">No</ITEM>

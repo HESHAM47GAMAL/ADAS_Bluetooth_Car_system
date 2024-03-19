@@ -32,6 +32,9 @@ Application/Application_program.o Application/Application_program.o:  \
   ../Application/../MCAL/ADC/../../SERVICE/STD_TYPES.h \
   ../Application/../MCAL/ADC/../GPIO/GPIO_interface.h \
   ../Application/../MCAL/ADC/ADC_config.h \
+  ../Application/../MCAL/TIMER1/TIMER1_interface.h \
+  ../Application/../MCAL/TIMER1/../../SERVICE/STD_TYPES.h \
+  ../Application/../MCAL/TIMER1/TIMER1_config.h \
   ../Application/Application_private.h \
   ../Application/../SERVICE/STD_TYPES.h ../Application/../SERVICE/IVT.h
 
@@ -98,6 +101,12 @@ Application/Application_program.o Application/Application_program.o:  \
 ../Application/../MCAL/ADC/../GPIO/GPIO_interface.h:
 
 ../Application/../MCAL/ADC/ADC_config.h:
+
+../Application/../MCAL/TIMER1/TIMER1_interface.h:
+
+../Application/../MCAL/TIMER1/../../SERVICE/STD_TYPES.h:
+
+../Application/../MCAL/TIMER1/TIMER1_config.h:
 
 ../Application/Application_private.h:
 

@@ -29,7 +29,10 @@ main.o main.o: ../main.c ../Application/Application_interface.h \
   ../Application/../MCAL/ADC/ADC_interface.h \
   ../Application/../MCAL/ADC/../../SERVICE/STD_TYPES.h \
   ../Application/../MCAL/ADC/../GPIO/GPIO_interface.h \
-  ../Application/../MCAL/ADC/ADC_config.h
+  ../Application/../MCAL/ADC/ADC_config.h \
+  ../Application/../MCAL/TIMER1/TIMER1_interface.h \
+  ../Application/../MCAL/TIMER1/../../SERVICE/STD_TYPES.h \
+  ../Application/../MCAL/TIMER1/TIMER1_config.h
 
 ../Application/Application_interface.h:
 
@@ -94,3 +97,9 @@ main.o main.o: ../main.c ../Application/Application_interface.h \
 ../Application/../MCAL/ADC/../GPIO/GPIO_interface.h:
 
 ../Application/../MCAL/ADC/ADC_config.h:
+
+../Application/../MCAL/TIMER1/TIMER1_interface.h:
+
+../Application/../MCAL/TIMER1/../../SERVICE/STD_TYPES.h:
+
+../Application/../MCAL/TIMER1/TIMER1_config.h:
