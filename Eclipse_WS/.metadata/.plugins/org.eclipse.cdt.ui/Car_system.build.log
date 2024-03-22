@@ -1,4 +1,4 @@
-14:06:16 **** Incremental Build of configuration Debug for project Car_system ****
+01:58:06 **** Incremental Build of configuration Debug for project Car_system ****
 make all 
 Invoking: Print Size
 avr-size --format=avr --mcu=atmega16 Car_system.elf
@@ -6,15 +6,15 @@ AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   20312 bytes (124.0% Full)
+Program:   20592 bytes (125.7% Full)
 (.text + .data + .bootloader)
 
-Data:        607 bytes (59.3% Full)
+Data:        611 bytes (59.7% Full)
 (.data + .bss + .noinit)
 
 
 Finished building: sizedummy
  
 
-14:06:16 Build Finished. 0 errors, 0 warnings. (took 248ms)
+01:58:07 Build Finished. 0 errors, 0 warnings. (took 298ms)
 

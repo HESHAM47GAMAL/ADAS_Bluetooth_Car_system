@@ -15,7 +15,7 @@
 #define GPIO_PRIVATE_H_ 
 
 /**************************                   INCLUDES                   **************************/
-#include "../SERVICE/STD_TYPES.h"
+#include "../../SERVICE/STD_TYPES.h"
 
 
 /**************************                   Register memmory mapped GPIO                  **************************/

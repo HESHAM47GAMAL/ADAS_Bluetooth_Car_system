@@ -15,7 +15,7 @@
 #define GPIO_INTERFACE_H_
 
 /**************************                   INCLUDES                   **************************/
-#include "../SERVICE/STD_TYPES.h"
+#include "../../SERVICE/STD_TYPES.h"
 
 
 /**************************                   Definitions macro                   **************************/

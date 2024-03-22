@@ -58,6 +58,7 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "std_types.h": "c",
-    "application_interface.h": "c"
+    "application_interface.h": "c",
+    "timer0_interface.h": "c"
   }
 }

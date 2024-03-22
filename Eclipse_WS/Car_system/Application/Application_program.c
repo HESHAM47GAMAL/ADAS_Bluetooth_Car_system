@@ -576,6 +576,8 @@ static void APP_DashBoard_SwitchPages(void)
         LCD_DisplayString("D=18/3/2024");
         DashBoard_updateTime();
 
+        
+
     }
     sei();
 }

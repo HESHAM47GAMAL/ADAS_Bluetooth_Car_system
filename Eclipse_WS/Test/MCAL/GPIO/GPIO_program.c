@@ -15,7 +15,7 @@
 #include "GPIO_private.h"
 #include "GPIO_interface.h"
 #include "GPIO_config.h"
-#include "../SERVICE/COMMON_MACROS.h"
+#include "../../SERVICE/COMMON_MACROS.h"
 
 
 /**************************                   Extern Global variable                   **************************/

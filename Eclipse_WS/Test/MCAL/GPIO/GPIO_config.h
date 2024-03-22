@@ -35,9 +35,9 @@
 
 GPIO_PORT_PIN_config GPIO_configParam [Configuration_NUM] = {
 
-		{PORTA_ID , PINS_ALL , INPUT_PORT}, //0
-		{PORTB_ID , PINS_ALL , INPUT_PORT}, //0
-		{PORTC_ID , PIN7_ID , OUTPUT_PIN}, //
+		{PORTC_ID , PIN0_ID , OUTPUT_PIN}, //0
+		{PORTA_ID , PIN0_ID , OUTPUT_PIN},
+		{PORTA_ID , PIN1_ID , OUTPUT_PIN},
 
 
 
