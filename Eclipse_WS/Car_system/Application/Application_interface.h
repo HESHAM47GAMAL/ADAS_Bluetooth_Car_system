@@ -53,6 +53,13 @@
 #define Relay_PORT                  PORTC_ID
 #define Relay_PIN                   PIN7_ID
 
+#define DC_RIR_1_PORT               PORTB_ID
+#define DC_RIR_1_PIN                PIN5_ID
+
+
+#define DC_RIR_2_PORT               PORTB_ID
+#define DC_RIR_2_PIN                PIN6_ID
+
 
 #define BTN_Pressed_State           LOGIC_LOW
 #define BTN_Released_State          LOGIC_HIGH
@@ -80,7 +87,7 @@ void App_Init(void);
 *   @synchronous / Asynchronous : Synchronous
 *   @ Reentrant / Non Reentrant : Reentrant
 */
-void StateMachineUpdate(void);
+void App_StateMachineUpdate(void);
 
 
 

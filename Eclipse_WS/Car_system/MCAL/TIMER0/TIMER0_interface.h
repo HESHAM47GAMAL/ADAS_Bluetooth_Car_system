@@ -198,6 +198,15 @@ void Timer0_CTCWaveGeneration(uint8 Ticks);
 */
     void Timer0_FastPWMSetDutyCycle(uint8 DutyCycle_value);
 
+/*
+*   @brief : this function used to Enable Timer 0 overflow interrupt
+*   @args  : void 
+*   @return: no return                                                              F_cpu
+*   @synchronous / Asynchronous : Synchronous                       F_OC0 = -----------------------
+*   @ Reentrant / Non Reentrant : Reentrant                                   preScaler*256
+*/
+    void Timer0_Enable_OVR_Flow_Interrupt(void);
+
 #elif(TIMER0_CURRENT_MODE == T0_PHASE_CORRECT_PWM_MODE)
 
 /*

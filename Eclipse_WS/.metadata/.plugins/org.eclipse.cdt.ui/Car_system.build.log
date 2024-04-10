@@ -1,20 +1,66 @@
-01:58:06 **** Incremental Build of configuration Debug for project Car_system ****
+15:15:54 **** Incremental Build of configuration Debug for project Car_system ****
 make all 
+Building file: ../Application/Application_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
+../Application/Application_program.c: In function 'DashBoard_updateSpeedLimitValue':
+../Application/Application_program.c:436: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'APP_DashBoard_SwitchPages':
+../Application/Application_program.c:574: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:576: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:591: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:593: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:598: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:605: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:607: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:609: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:616: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'APP_KeypadUpdate':
+../Application/Application_program.c:642: warning: unused variable 'SL_DecIsStillPressed'
+../Application/Application_program.c:640: warning: unused variable 'SL_IncIsStillPressed'
+../Application/Application_program.c: In function 'DashBoard_updateTime':
+../Application/Application_program.c:1200: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'ACCS_CatchDistance':
+../Application/Application_program.c:1253: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'App_CarSpeedUpdate':
+../Application/Application_program.c:1354: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: At top level:
+../Application/Application_program.c:169: warning: 'Hanndle_GrearBox_D_State' defined but not used
+../Application/Application_private.h:174: warning: 'Buzzer_NotifySound' declared 'static' but never defined
+../Application/Application_program.c:1235: warning: 'ACCS_CatchDistance' defined but not used
+../Application/Application_program.c:1260: warning: 'ACCS_DicisionTake' defined but not used
+../Application/Application_private.h:202: warning: 'ACCS_PID' declared 'static' but never defined
+../Application/Application_program.c:1377: warning: 'App_TimeOut_handle_DM_Time' defined but not used
+Finished building: ../Application/Application_program.c
+ 
+Building target: Car_system.elf
+Invoking: AVR C Linker
+avr-gcc -Wl,-Map,Car_system.map -mmcu=atmega16 -o "Car_system.elf"  ./MCAL/TIMER1/TIMER1_config.o ./MCAL/TIMER1/TIMER1_program.o  ./MCAL/TIMER0/TIMER0_config.o ./MCAL/TIMER0/TIMER0_program.o  ./MCAL/GPIO/GPIO_program.o  ./MCAL/EXT_INT/EXT_INT_program.o  ./MCAL/ADC/ADC_config.o ./MCAL/ADC/ADC_program.o  ./HAL/Potentiometer/POT_program.o  ./HAL/LED/LED_program.o  ./HAL/LCD/LCD_program.o  ./HAL/KEYPAD/Keypad_program.o  ./HAL/Buzzer/Buzzer_program.o  ./HAL/BUTTON/BUTTON_program.o  ./Application/Application_program.o  ./main.o   
+Finished building target: Car_system.elf
+ 
+Invoking: AVR Create Extended Listing
+avr-objdump -h -S Car_system.elf  >"Car_system.lss"
+Finished building: Car_system.lss
+ 
+Create Flash image (ihex format)
+avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex Car_system.elf  "Car_system.hex"
+Finished building: Car_system.hex
+ 
 Invoking: Print Size
 avr-size --format=avr --mcu=atmega16 Car_system.elf
 AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   20592 bytes (125.7% Full)
+Program:   20996 bytes (128.1% Full)
 (.text + .data + .bootloader)
 
-Data:        611 bytes (59.7% Full)
+Data:        582 bytes (56.8% Full)
 (.data + .bss + .noinit)
 
 
 Finished building: sizedummy
  
 
-01:58:07 Build Finished. 0 errors, 0 warnings. (took 298ms)
+15:15:55 Build Finished. 0 errors, 21 warnings. (took 1s.384ms)
 

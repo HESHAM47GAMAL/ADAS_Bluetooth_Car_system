@@ -18,7 +18,12 @@
 #include "Application_private.h"
 #include "../SERVICE/IVT.h"
 
+
+
+
 /**************************                   Extern variables                   **************************/
+
+/*  Array that carry values for New Custom Character  */
 extern uint8 LCD_Page_Not_Selected [] ;
 extern uint8 LCD_Page_Selected [] ;
 extern uint8 LCD_Right_ICON [] ;
@@ -27,7 +32,7 @@ extern uint8 LCD_Mute_ICON [] ;
 extern uint8 LCD_Skull_ICON [] ;
 extern uint8 LCD_Alarm_ICON [] ;
 
-
+/*  Locations that this custom characters Stored  */
 #define POS_LCD_Page_Not_Selected               LCD_CGRAM_LOCATION_1
 #define POS_LCD_Page_Selected                   LCD_CGRAM_LOCATION_2
 #define POS_LCD_Right_ICON                      LCD_CGRAM_LOCATION_3
@@ -69,55 +74,91 @@ uint8 SpeedLimit_Current__State = SpeedLimit_Disable ;
 
 uint8 BrakingAssist_Current_State = BrakingAssist_Disable;
 
+uint8 DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
 
-volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
 /*  Should be signed as If press brake in N mode will decrease -2 and if data type uint8 so when decrease will happen underflow and if value equal Zero at first so will be 254 so program will have bug*/
 static volatile sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
 
+/*  carry state of Braking Button that updated by Interrupt and this variable take copy of last state of Braking Button  */
 static volatile uint8 Global_Braking_BTN_State = BTN_Released_State ;
 
-
+/*  This variable store intail value for speed Limiter*/
 static volatile uint8 Global_Speed_Limiter_value = 40 ; /*  Set intail value 40 as no limit speed under 40 KM/h*/
 
+
+
+volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
+
+
+
+
+/* status Available for this Speed Limiter system  */
 enum Speed_Limit_Status{Speed_Limit_Failed , Speed_Limit_Meet} ;
+
+/* status Available for this Braking Assist system  */
+enum Distance_BA_status {Distance_BA_Failed , Distance_BA_Meet} ;
+
+/* status Available for this Driving Monitoring system  */
+enum DrivingMonetoring_Status {DM_Failed    ,   DM_Meet};
+//                            make alarm       don't make alarm     
+
 
 uint8 Speed_limit_Current_Status = Speed_Limit_Failed;
 
-enum Distance_BA_status {Distance_BA_Failed , Distance_BA_Meet} ;
 
 uint8 Distance_BA_Current_status = Distance_BA_Failed;
 
-uint8 DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
 
-enum DrivingMonetoring_Status {DM_Failed    ,   DM_Meet};
-//                            make alarm       don't make alarm     
 uint8  DrivingMonetoring_Current_Status = DM_Meet ;
 
+
 /* Carry number of interrupt happen for TImer 1 */
-uint8 TimeOut_Counter = 0 ;
+uint8 TimeOut_Counter = 0 ; // old varaible it used for real time and Driving monetering with Timer 1
 
-
+/* Varaibles used to update Real Time Clock  */
 uint8 Clock_sec = 12; 
 uint8 Clock_min = 30 ;
 uint8 Clock_hour = 2 ;
 
-
+/*  Used to store how many of kilo meters car Moved  */
 float32 Accumulative_Distance = 0 ;
 
 
-void StateMachineUpdate(void)
+
+/*  Carry number of overflow for 1 second for Real time clock*/
+uint8 Timer0_Overflow_Counter_RTClock = 0;
+
+/*  Carry number of overflow for 5 second for Driving monetring*/
+uint16 Timer0_Overflow_counter_DM = 0 ;
+
+uint8 Buzzer_GiveSound =  NO_Condition  ;
+uint8 Buzzer_Timer0_OVF_count = 0 ;
+
+/*  👀👀 Function called inside While(1) Loop  */
+
+void App_StateMachineUpdate(void)
 {
     Hanndle_GrearBox_N_State();
+
     // Hanndle_GrearBox_D_State();
+
     Hanndle_GrearBox_R_State();
+
+    /*  it was used to take dicision as button are pressed and this function handle everything  */
     // Buttons_Update();
 
     APP_KeypadUpdate();
-    App_SpeedUpdate ();
+
+    Braking_LongPressHandle();
+
+    App_CarSpeedUpdate ();
+
     App_GetDiffCarSpeed_and_limit();
+
     /*  make continous update for dashboard if I in page 2   */
     DashBoard_DrivingMonetoring_continous_Status_update();
+    
     /*  used to update time if I in page 4*/
     DashBoard_updateTime();
 
@@ -233,21 +274,31 @@ void App_Init(void)
     /*  Initailize Relay Pin  */
     GPIO_SetPinDirection(Relay_PORT,Relay_PIN,OUTPUT_PIN);
 
+    /*  Initialize pins that control direction for DC motor  */
+    GPIO_SetPinDirection(DC_RIR_1_PORT,DC_RIR_1_PIN,OUTPUT_PIN);
+    GPIO_SetPinDirection(DC_RIR_2_PORT,DC_RIR_2_PIN,OUTPUT_PIN);
+
+
     /*  Turn Of all of this led  */
     LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN, LED_OFF);
     LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN, LED_OFF);
 
     /*  initialize Timer0   */
     Timer0_Init();
+    
 
     /*  Set callback function that will called when Timeout happen to turn of buzzer and handle anything another    */
-    Timer0_SetCallBack(Buzzer_timeOutOff);
+    // Timer0_SetCallBack(Buzzer_timeOutOff);
+    Timer0_SetCallBack(TImer0_OVF_Handling_Fun);
+    
+    /*  Enable Overflow Interrupt  */
+    Timer0_Enable_OVR_Flow_Interrupt();
 
-    /*  Initailize Timer 1*/
-    Timer1_Init();
+    // /*  Initailize Timer 1*/
+    // Timer1_Init();
 
-    /*  Set callback for finction that will hanle DM and Time */
-    Timer1_SetCallBack(App_TimeOut_handle_DM_Time);
+    // /*  Set callback for finction that will hanle DM and Time */
+    // Timer1_SetCallBack(App_TimeOut_handle_DM_Time);
 
     Timer1_ProvideClock();
 
@@ -281,7 +332,9 @@ static void DashBoard_Init(void)
 
     /*  Display speed */
     LCD_MoveCursor(1,11);
-    LCD_DisplayString((const uint8 * )"SP:0KM"); 
+    LCD_DisplayString((const uint8 * )"SP:"); 
+    /*  Call function that catch current speed to dispaly  */
+    App_CarSpeedUpdate();
 
     /*  Display state of Adaptive Cruise control  */
     LCD_MoveCursor(2,0);
@@ -496,19 +549,6 @@ static void DashBoard_DrivingMonetoring_continous_Status_update(void)
 
 
 
-static void DashBoard_DistanceShow(void)
-{
-    LCD_MoveCursor(3,0);
-    LCD_DisplayString((const uint8 * )"Distance : ");
-}
-
-
-static void DashBoard_DistanceHide(void)
-{
-    LCD_MoveCursor(3,0);
-    LCD_DisplayString((const uint8 * )"                    ");
-}
-
 
 static void APP_DashBoardPage_update(void)
 {
@@ -630,7 +670,9 @@ static void APP_KeypadUpdate(void)
     // if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
     {
         /*  Make counter with zero to start count from zero for DM */
-        TimeOut_Counter = 0 ;
+        // TimeOut_Counter = 0 ;//old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
+
         /*  Change state to update in LCD*/
         DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -639,7 +681,8 @@ static void APP_KeypadUpdate(void)
         {
             GearBox_IsStillPressed = YES_Condition ;
             /* turn buzzer on and give timer 0 clock and set timeout    */
-            Buzzer_NotifySound();
+            // Buzzer_NotifySound();
+            Buzzer_GiveSound = YES_Condition; 
 
             /*  Go to next state for gearbox*/
             GearBox_Current_State ++ ;
@@ -669,7 +712,9 @@ static void APP_KeypadUpdate(void)
         if(local_currentValue_keypad == Keypad_CCS_pressed_value) 
         {
             /*  Make counter with zero to start count from zero for DM */
-            TimeOut_Counter = 0 ;
+            // TimeOut_Counter = 0 ;//old one when I use timer1
+            Timer0_Overflow_counter_DM = 0 ;
+
             /*  Change state to update in LCD*/
             DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -678,7 +723,8 @@ static void APP_KeypadUpdate(void)
             {
                 CCS_IsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                Buzzer_NotifySound();
+                // Buzzer_NotifySound();
+                Buzzer_GiveSound = YES_Condition; 
 
                 if(CCS_Currnet_state == CCS_Disable ) 
                 {
@@ -718,7 +764,9 @@ static void APP_KeypadUpdate(void)
         if(local_currentValue_keypad == Keypad_SpeedLimit_ON_OFF_pressed_value) 
         {
             /*  Make counter with zero to start count from zero for DM */
-            TimeOut_Counter = 0 ;
+            // TimeOut_Counter = 0 ;//old one when I use timer1
+            Timer0_Overflow_counter_DM = 0 ;
+
             /*  Change state to update in LCD*/
             DrivingMonetoring_Current_Status = DM_Meet ; 
 
@@ -728,7 +776,8 @@ static void APP_KeypadUpdate(void)
             {
                 SL_ON_OFFIsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                Buzzer_NotifySound();
+                // Buzzer_NotifySound();
+                Buzzer_GiveSound = YES_Condition; 
 
                 if(SpeedLimit_Current__State == SpeedLimit_Disable)
                 {
@@ -757,7 +806,9 @@ static void APP_KeypadUpdate(void)
         if(local_currentValue_keypad == Keypad_BrakingAssist_pressed_value)
         {
             /*  Make counter with zero to start count from zero for DM */
-            TimeOut_Counter = 0 ;
+            // TimeOut_Counter = 0 ; //old one when I use timer1
+            Timer0_Overflow_counter_DM = 0 ;
+            
             /*  Change state to update in LCD*/
             DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -765,7 +816,9 @@ static void APP_KeypadUpdate(void)
             {
                 BrakingAssit_IsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                Buzzer_NotifySound();
+                // Buzzer_NotifySound();
+                Buzzer_GiveSound = YES_Condition; 
+
                 if(BrakingAssist_Current_State == BrakingAssist_Disable)
                 {
                     BrakingAssist_Current_State = BrakingAssist_Enable ;
@@ -798,7 +851,8 @@ static void APP_KeypadUpdate(void)
                 DrivingMonetoring_IsStillPressed = YES_Condition ;
 
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                Buzzer_NotifySound();
+                //Buzzer_NotifySound();
+                Buzzer_GiveSound = YES_Condition; 
                 
                 if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
                 {
@@ -812,7 +866,8 @@ static void APP_KeypadUpdate(void)
                     Timer1_UpdateValue(Value_Loading_Timer1);
 
                     /*  Make counter start from zero Again  */
-                    TimeOut_Counter = 0 ;
+                    // TimeOut_Counter = 0 ;//old one when I use timer1
+                    Timer0_Overflow_counter_DM = 0 ;
 
                     /*  intialize that will meeting state at first  */
                     DrivingMonetoring_Current_Status = DM_Meet ;
@@ -840,7 +895,9 @@ static void APP_KeypadUpdate(void)
     if(local_currentValue_keypad == Keypad_Page_R_pressed_value)
     {
         /*  Make counter with zero to start count from zero for DM */
-        TimeOut_Counter = 0 ;
+        // TimeOut_Counter = 0 ;//old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
+
         /*  Change state to update in LCD*/
         DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -872,7 +929,9 @@ static void APP_KeypadUpdate(void)
     if(local_currentValue_keypad == Keypad_Page_L_pressed_value)
     {
         /*  Make counter with zero to start count from zero for DM */
-        TimeOut_Counter = 0 ;
+        // TimeOut_Counter = 0 ; //old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
+
         /*  Change state to update in LCD*/
         DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -906,7 +965,8 @@ static void APP_KeypadUpdate(void)
     if(local_currentValue_keypad == Keypad_SpeedLimit_Inc_pressed_value)
     {
         /*  Make counter with zero to start count from zero for DM */
-        TimeOut_Counter = 0 ;
+        // TimeOut_Counter = 0 ; //old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
         /*  Change state to update in LCD*/
         DrivingMonetoring_Current_Status = DM_Meet ;
         if(SL_FirstTime_INC == YES_Condition )
@@ -949,7 +1009,9 @@ static void APP_KeypadUpdate(void)
     if(local_currentValue_keypad == Keypad_SpeedLimit_Dec_pressed_value)
     {
         /*  Make counter with zero to start count from zero for DM */
-        TimeOut_Counter = 0 ;
+        // TimeOut_Counter = 0 ;//old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
+
         /*  Change state to update in LCD*/
         DrivingMonetoring_Current_Status = DM_Meet ;
 
@@ -985,13 +1047,519 @@ static void APP_KeypadUpdate(void)
 
     }
 
-
-
-
-    
 }
 
 
+
+
+
+
+
+
+static void Braking_Button_Handling(void)
+{
+    /*  Make initial state that Button is released  */
+    static uint8 Braking_BTN_State = BTN_Released_State ;
+    /*  Will Enter this condition only when press button Only (this will make failling edge)  */
+    if(Braking_BTN_State == BTN_Released_State)
+    {
+        /*  So when I release utton will make Rising Edge so I need to make setup to detect this state to turn led off  */
+        INT1_init(RISING_EDGE_TRIGGER,INPUT_PIN); /*    If swap between that command and next command will face problem that If I make very short press will face problem  that led will turn on only not turn off also and this not required*/
+
+        // Buzzer_NotifySound();
+        Buzzer_GiveSound = YES_Condition; 
+
+        /*  Make update to state    */
+        Braking_BTN_State = BTN_Pressed_State;
+        /*  Update global varaible that carry state of car speed    */
+        Global_Braking_BTN_State = Braking_BTN_State;
+        /*  Turn led on  */
+        LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_ON);
+/*                Here when I press in Braking if in D mode should Disable ACCS mode                                                       */
+/*
+*   I face very big problem as this Button has two scienaros (very short press and normal or long press )
+*   In very short press I will face problem if I Enable ACCS as there are if condition will be true and this code will take time for execute (failing edge followed by rising edge ) and code in if condition execution time greater than time of(convert from failling edge to rising edge)
+*/
+        // if((GearBox_Current_State == D_GearBox) && (ACCS_Currnet_state == ACCS_Enable))
+        // {
+        //     /*	Enable Global Interrupt  */
+	    //     sei();
+
+        //     /*  Disable ACCS if Enabled  */
+        //     ACCS_Currnet_state = ACCS_Disable;
+        //     /*  Turn off led of it was turned on  */
+        //     LED_OnOffPositiveLogic(Green_LED_PORT,Green_LED_PIN,LED_OFF);
+        //     /*  Update LCD with new change*/
+        //     DashBoard_Update_CCS_State(ACCS_Currnet_state);
+
+        //     DashBoard_DistanceHide();
+
+
+        // }
+        tessst();
+    }
+    /*  Will Enter this condition only when release button Only (this will make failling edge)  */
+    else if(Braking_BTN_State == BTN_Pressed_State)
+    {
+
+        INT1_init(FALLING_EDGE_TRIGGER,INPUT_PIN);
+        Braking_BTN_State = BTN_Released_State;
+        /*  Update global varaible that carry state of car speed    */
+        Global_Braking_BTN_State = Braking_BTN_State;
+        LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+    }
+}
+
+
+void tessst (void)
+{
+        if((GearBox_Current_State == D_GearBox))
+        {
+            /*	Enable Global Interrupt  */
+	        sei();
+            /*  If it was CCS enabled should disabled and update in LCD*/
+            if(CCS_Currnet_state == CCS_Enable)
+            {
+                /*  Disable ACCS if Enabled  */
+                CCS_Currnet_state = CCS_Disable;
+
+                /*  Update LCD with new change*/
+                DashBoard_Update_CCS_State(CCS_Currnet_state);
+            }
+
+            /*  If it was Braking Assist enabled should disabled and update in LCD*/
+            if(BrakingAssist_Current_State == BrakingAssist_Enable)
+            {
+                /*  Disable BA Sysystem */
+                BrakingAssist_Current_State = BrakingAssist_Disable ;
+
+                /*  Update LCD with new change*/
+                DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
+            }
+
+            // /*  If it was Speed Limiter enabled should disabled and update in LCD*/
+            // if(SpeedLimit_Current__State == SpeedLimit_Enable)
+            // {
+            //     /*  Disable BA Sysystem */
+            //     SpeedLimit_Current__State = SpeedLimit_Disable ;
+                
+            //     /*  Update LCD with new change*/
+            //     DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+            // }
+
+            // DashBoard_DistanceHide();
+            //DashBoard_DistanceHide_small();
+
+
+            /*  Make counter with zero to start count from zero for DM */
+            // TimeOut_Counter = 0 ;//old one when I use timer1
+            Timer0_Overflow_counter_DM = 0 ;
+
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ;
+
+        }
+}
+
+
+void Braking_LongPressHandle(void)
+{
+    if(Global_Braking_BTN_State == BTN_Pressed_State)
+    {
+        /*  ⚠️Here make disable for Cruise control sysytem (CCS) as there bug 
+        *   when press in brake system if CCS is enaled will disaled but during  pressing brake if CCS activated again will not handled
+        */
+        if(CCS_Currnet_state == CCS_Enable)
+        {
+            /*  Disable ACCS if Enabled  */
+            CCS_Currnet_state = CCS_Disable;
+
+            /*  Update LCD with new change*/
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
+        }
+
+        /*  ⚠️Here when press on brakeing pedal will detected as A press and if DM activated and after 5 second make alarm for no action from driver 
+        *   so will give alarm and when press on braking pedal alarm will stop but after another 5 second there another alarm fired although I'm still press on braking padel 
+        *   As system can't handle this so Here I handle this bug
+        */
+        
+        /*  Make counter with zero to start count from zero for DM */
+        //TimeOut_Counter = 0 ; //old one when I use timer1
+        Timer0_Overflow_counter_DM = 0 ;
+    }
+}
+
+
+
+
+static void DashBoard_updateTime(void)
+{
+    if(Page_Current_State == Page_4_LCD)
+    {
+        LCD_MoveCursor(1,0);
+        LCD_DisplayString("T=");if(Clock_hour < 10)
+        {
+            LCD_DisplayCharacter(' ');
+            LCD_intToString(Clock_hour);
+        }
+        else
+        {
+            LCD_intToString(Clock_hour);
+        }
+        LCD_DisplayCharacter(':');
+        if(Clock_min < 10)
+        {
+            LCD_DisplayCharacter(' ');
+            LCD_intToString(Clock_min);
+        }
+        else
+        {
+            LCD_intToString(Clock_min);
+        }
+        LCD_DisplayCharacter(':');
+        if(Clock_sec < 10)
+        {
+            LCD_DisplayCharacter(' ');
+            LCD_intToString(Clock_sec);
+        }
+        else
+        {
+            LCD_intToString(Clock_sec);
+        }
+        LCD_DisplayCharacter(' ');
+        
+    }
+}
+
+static void ACCS_CatchDistance(void)
+{
+    /*  ⚠️🙆‍♂️🚩Here I need to disable interrupt as I don't know when I press braking button 
+    * as may be before printing point(.) and number after point  press braking button and this lead to call DashBoard_DistanceHide() function
+    * and this make cursor position that I make disable  be at last colimn in last row and will return here to continue this code here 
+    * so this lead to make data overwrite in LCD 
+    * "this is one scenario from a lot of scenarios "
+    */
+    cli();
+    volatile uint16 Adc_value_pure = ADC_ReadChannelSingleConvertion(ADC_Channel_0);
+    distance_ACCS = (Adc_value_pure * 10) / 1023.0 ; 
+    /*  Here trying to get first number after Sign  */
+    volatile uint8 distance_after_point = ( (uint8)(distance_ACCS * 10) )  % 10;
+    LCD_MoveCursor(3,11);
+    /*  For Small LCD*/
+    //LCD_MoveCursor(1,11);
+	LCD_intToString((uint8)distance_ACCS);
+	LCD_DisplayCharacter('.');
+    LCD_intToString(distance_after_point);
+    LCD_DisplayString("M ");
+    sei();
+}
+
+
+
+static void ACCS_DicisionTake(void)
+{
+    if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
+    {
+
+        cli();
+        if((uint8)(distance_ACCS) >= 8) /*  Case 1  */
+        {
+            
+            /*  Do no thing */
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+
+           
+        }
+        else if(((uint8)(distance_ACCS) >= 6)) /*  Case 2  */
+        {
+           
+            /*  in this case only turn yellow led only */
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
+            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+
+          
+
+            /*  Try to return back to speed that was make fixed*/
+        }
+        else if (((uint8)(distance_ACCS) >= 4)) /*  Case 3  */
+        {
+            
+
+            /*  in this case turn yellow and red led on*/
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
+
+            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_ON);
+
+        }
+        else if (((uint8)(distance_ACCS) >= 2)) /*  Case 4  */
+        {
+
+
+            /*  turn yellow led on and make red led toggles continuesly with very speed */
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
+
+            LED_Toggle(Red_LED_PORT,Red_LED_PIN);
+
+        }   
+        else if (((uint8)(distance_ACCS) >= 0)) /*  Case 5  */
+        {
+            /*  Turn Of all leds    */
+            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+
+
+            /*  Display Crash message   */
+            LCD_ClearScreen();
+            LCD_DisplayString((const uint8 *)"Crushed car ):");
+            
+
+            /*  flash Relay  */
+
+            /*  Disable all Button*/
+            while(1);
+        }
+        
+        sei();
+    }
+}
+
+static void App_CarSpeedUpdate(void)
+{
+    static volatile uint16 Prev_Adc_value_pure = 0;
+    /*  Read current value for Potentiometer that work as Accelerator  */
+    volatile uint16 Adc_value_pure = ADC_ReadChannelSingleConvertion(ADC_Channel_0);  
+    /*  Get speed that be assigned depend on next condition state  */ 
+    Temp_Speed = (uint8)( ( (200) * ((uint32) Adc_value_pure)  ) / 1023 ) ;
+
+    Diff_between_ADCS =  (sint16)Prev_Adc_value_pure - (sint16)Adc_value_pure;
+
+    if((Diff_between_ADCS > 19) || (Diff_between_ADCS < -19)) // by try found that potentiometer in real life its value vary with max change = 15 so I want change greater than 25 in CCR or CR to accept it as human change not noise in potentiometer
+    {
+        Car_Speed = Temp_Speed ;
+        Timer0_Overflow_counter_DM =0 ; // when there are new change in potentiometer (accelemetor) reset time counter for Driving monetering 
+        
+        if((CCS_Currnet_state == CCS_Enable) && (GearBox_Current_State == D_GearBox))
+        {
+            /*  As in requirement Cruise control will be Disabled when press in accelerator pedal if I in "D" Gearbox  and CCS was activated */
+            CCS_Currnet_state = CCS_Disable ;
+            DashBoard_Update_CCS_State(CCS_Currnet_state);
+        }
+    }
+        cli();
+        LCD_MoveCursor(1,14);
+        /*✍️LCD_SMALL_LARGE*/
+        // LCD_MoveCursor(0,0);
+        LCD_intToString((uint8)Car_Speed) ;
+        LCD_DisplayString("KM ");
+
+        /*  used for debug only
+
+        // LCD_intToString(Diff_between_ADCS) ;
+        // LCD_DisplayString("     ");
+        // LCD_MoveCursor(1,0);
+        // LCD_intToString(Prev_Adc_value_pure) ;
+        // LCD_DisplayString(" ");
+        // LCD_MoveCursor(1,8);
+        // LCD_intToString(Adc_value_pure) ;
+        // LCD_DisplayString(" ");
+
+        */
+
+        sei();
+    /*  Save last change in Speed variable that will display in LCD  */
+    Prev_Adc_value_pure = Adc_value_pure ;
+
+}
+
+
+static void App_TimeOut_handle_DM_Time(void)
+{
+    /*  Increament by one*/
+    TimeOut_Counter++;
+    Timer1_UpdateValue(Value_Loading_Timer1);
+
+    /*  No need to increment this variable as DM disabled  */
+    if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
+    {
+        TimeOut_Counter = 0 ;
+    }
+
+    if(TimeOut_Counter == 5)
+    {
+        TimeOut_Counter = 0;
+        /*  Here happen time out that it may be user is in Sleep  */
+        DrivingMonetoring_Current_Status = DM_Failed ;
+
+    }
+
+    Clock_sec ++ ;
+    if(Clock_sec == 60)
+    {
+        Clock_sec =  0 ;
+        Clock_min ++;
+    }
+    if(Clock_min == 60)
+    {
+        Clock_min = 0 ;
+        Clock_hour ++;
+    }
+
+    /*  Display total distance  */
+    Accumulative_Distance += (Car_Speed / 100.0);
+
+}
+
+static void TImer0_OVF_Handling_Fun(void)
+{
+    Timer0_Overflow_counter_DM++; 
+    /*  No need to increment this variable as DM disabled  */
+    if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
+    {
+        Timer0_Overflow_counter_DM = 0 ;
+    }
+
+    else if(Timer0_Overflow_counter_DM == Timer0_OVF_5_sec_DrivingMonetoring)
+    {
+        Timer0_Overflow_counter_DM = 0;
+        /*  Here happen time out that it may be user is in Sleep  */
+        DrivingMonetoring_Current_Status = DM_Failed ;
+
+    }
+    
+    if(Buzzer_GiveSound == YES_Condition )
+    {
+        Buzzer_Timer0_OVF_count++;
+        Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_ON);
+        if(Buzzer_Timer0_OVF_count == Timer0_OVF_Buzzer_Notify_sound)
+        {
+            Buzzer_GiveSound = NO_Condition ;
+            Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
+        }
+    }
+    else if(Buzzer_GiveSound == NO_Condition)
+    {
+        Buzzer_Timer0_OVF_count = 0;
+    }
+
+
+    Timer0_Overflow_Counter_RTClock++;
+    if(Timer0_Overflow_Counter_RTClock == Timer0_OVF_1_sec_RTClock)
+    {
+        Timer0_Overflow_Counter_RTClock = 0;
+        /*  This is part for update real time clock  */
+        Clock_sec ++ ;
+        if(Clock_sec == 60)
+        {
+            Clock_sec =  0 ;
+            Clock_min ++;
+        }
+        if(Clock_min == 60)
+        {
+            Clock_min = 0 ;
+            Clock_hour ++;
+        }
+    }
+
+
+}
+
+
+// static void Buzzer_NotifySound(void)
+// {
+//     /*  initialize Timer register with zero value   */
+//     Timer0_UpdateValue(0);
+//     /*  Turn Buzzer on  */
+//     Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_ON);
+//     /*  Timer provide clock  */
+//     Timer0_ProvideClock();
+
+   
+
+// }
+
+
+// void Buzzer_timeOutOff(void)
+// {
+//     Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
+//     Timer0_StopClock();
+// }
+
+
+
+/******************************************************************************/
+
+// static void DashBoard_Init_small(void)
+// {
+//     /*  Display GearBox Current state  */
+//     LCD_MoveCursor(0,0);
+//     LCD_DisplayString((const uint8 * )"G:NC");
+//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+//     LCD_DisplayCharacter('B');
+//     LCD_DisplayCharacter(POS_LCD_False_ICON);
+//     LCD_DisplayCharacter('L');
+//     LCD_DisplayCharacter(POS_LCD_False_ICON); 
+
+//     LCD_DisplayString((const uint8 * )"S0");
+
+
+//     /*  Display state of Adaptive Cruise control  */
+//     LCD_MoveCursor(1,7);
+//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
+//     LCD_DisplayCharacter(POS_LCD_Page_Selected);
+//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);   
+// }
+
+// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state)
+// {
+//     /*  Array carry All Characters For GearBox as make display easier using index*/
+//     uint8 GearBox_Characyer [] = {'N','D','R'};
+//     /*  Go to index that display current GearBox state*/
+//     LCD_MoveCursor(0,2);
+//     /*  Edit its state with new state given to function*/
+//     LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);    
+// }
+
+
+
+// static void DashBoard_DistanceShow_small(void)
+// {
+//     LCD_MoveCursor(1,8);
+//     LCD_DisplayString((const uint8 * )",D:");
+ 
+// }
+
+// static void DashBoard_DistanceHide_small(void)
+// {
+//     LCD_MoveCursor(1,8);
+//     LCD_DisplayString((const uint8 * )"        ");
+// }
+
+// static void APP_DashBoardPage_update_small(void)
+// {
+//     uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
+//     LCD_MoveCursor(1,7);
+//     /*  Display indicator for current page  */
+//     LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
+//     LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
+//     LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
+// }
+
+
+
+
+// static void DashBoard_DistanceShow(void)
+// {
+//     LCD_MoveCursor(3,0);
+//     LCD_DisplayString((const uint8 * )"Distance : ");
+// }
+
+
+// static void DashBoard_DistanceHide(void)
+// {
+//     LCD_MoveCursor(3,0);
+//     LCD_DisplayString((const uint8 * )"                    ");
+// }
 
 
 
@@ -1092,378 +1660,3 @@ static void APP_KeypadUpdate(void)
 
 // }
 
-
-
-
-
-static void Braking_Button_Handling(void)
-{
-    /*  Make initial state that Button is released  */
-    static uint8 Braking_BTN_State = BTN_Released_State ;
-    /*  Will Enter this condition only when press button Only (this will make failling edge)  */
-    if(Braking_BTN_State == BTN_Released_State)
-    {
-        /*  So when I release utton will make Rising Edge so I need to make setup to detect this state to turn led off  */
-        INT1_init(RISING_EDGE_TRIGGER,INPUT_PIN); /*    If swap between that command and next command will face problem that If I make very short press will face problem  that led will turn on only not turn off also and this not required*/
-
-        Buzzer_NotifySound();
-
-        /*  Make update to state    */
-        Braking_BTN_State = BTN_Pressed_State;
-        /*  Update global varaible that carry state of car speed    */
-        Global_Braking_BTN_State = Braking_BTN_State;
-        /*  Turn led on  */
-        LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_ON);
-/*                Here when I press in Braking if in D mode should Disable ACCS mode                                                       */
-/*
-*   I face very big problem as this Button has two scienaros (very short press and normal or long press )
-*   In very short press I will face problem if I Enable ACCS as there are if condition will be true and this code will take time for execute (failing edge followed by rising edge ) and code in if condition execution time greater than time of(convert from failling edge to rising edge)
-*/
-        // if((GearBox_Current_State == D_GearBox) && (ACCS_Currnet_state == ACCS_Enable))
-        // {
-        //     /*	Enable Global Interrupt  */
-	    //     sei();
-
-        //     /*  Disable ACCS if Enabled  */
-        //     ACCS_Currnet_state = ACCS_Disable;
-        //     /*  Turn off led of it was turned on  */
-        //     LED_OnOffPositiveLogic(Green_LED_PORT,Green_LED_PIN,LED_OFF);
-        //     /*  Update LCD with new change*/
-        //     DashBoard_Update_CCS_State(ACCS_Currnet_state);
-
-        //     DashBoard_DistanceHide();
-
-
-        // }
-        tessst();
-    }
-    /*  Will Enter this condition only when release button Only (this will make failling edge)  */
-    else if(Braking_BTN_State == BTN_Pressed_State)
-    {
-
-        INT1_init(FALLING_EDGE_TRIGGER,INPUT_PIN);
-        Braking_BTN_State = BTN_Released_State;
-        /*  Update global varaible that carry state of car speed    */
-        Global_Braking_BTN_State = Braking_BTN_State;
-        LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
-    }
-}
-
-
-void tessst (void)
-{
-        if((GearBox_Current_State == D_GearBox))
-        {
-            /*	Enable Global Interrupt  */
-	        sei();
-            /*  If it was CCS enabled should disabled and update in LCD*/
-            if(CCS_Currnet_state == CCS_Enable)
-            {
-                /*  Disable ACCS if Enabled  */
-                CCS_Currnet_state = CCS_Disable;
-
-                /*  Update LCD with new change*/
-                DashBoard_Update_CCS_State(CCS_Currnet_state);
-            }
-
-            /*  If it was Braking Assist enabled should disabled and update in LCD*/
-            if(BrakingAssist_Current_State == BrakingAssist_Enable)
-            {
-                /*  Disable BA Sysystem */
-                BrakingAssist_Current_State = BrakingAssist_Disable ;
-
-                /*  Update LCD with new change*/
-                DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
-            }
-
-            // /*  If it was Speed Limiter enabled should disabled and update in LCD*/
-            // if(SpeedLimit_Current__State == SpeedLimit_Enable)
-            // {
-            //     /*  Disable BA Sysystem */
-            //     SpeedLimit_Current__State = SpeedLimit_Disable ;
-                
-            //     /*  Update LCD with new change*/
-            //     DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
-            // }
-
-            // DashBoard_DistanceHide();
-            //DashBoard_DistanceHide_small();
-
-
-            /*  Make counter with zero to start count from zero for DM */
-            TimeOut_Counter = 0 ;
-            /*  Change state to update in LCD*/
-            DrivingMonetoring_Current_Status = DM_Meet ;
-
-        }
-}
-
-
-static void Buzzer_NotifySound(void)
-{
-    /*  initialize Timer register with zero value   */
-    Timer0_UpdateValue(0);
-    /*  Turn Buzzer on  */
-    Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_ON);
-    /*  Timer provide clock  */
-    Timer0_ProvideClock();
-
-   
-
-}
-
-
-void Buzzer_timeOutOff(void)
-{
-    Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
-    Timer0_StopClock();
-}
-
-
-static void App_TimeOut_handle_DM_Time(void)
-{
-    /*  Increament by one*/
-    TimeOut_Counter++;
-    Timer1_UpdateValue(Value_Loading_Timer1);
-
-    /*  No need to increment this variable as DM disabled  */
-    if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
-    {
-        TimeOut_Counter = 0 ;
-    }
-
-    if(TimeOut_Counter == 5)
-    {
-        TimeOut_Counter = 0;
-        /*  Here happen time out that it may be user is in Sleep  */
-        DrivingMonetoring_Current_Status = DM_Failed ;
-
-    }
-
-    Clock_sec ++ ;
-    if(Clock_sec == 60)
-    {
-        Clock_sec =  0 ;
-        Clock_min ++;
-    }
-    if(Clock_min == 60)
-    {
-        Clock_min = 0 ;
-        Clock_hour ++;
-    }
-
-    /*  Display total distance  */
-    Accumulative_Distance += (Car_Speed / 100.0);
-
-
-}
-
-static void DashBoard_updateTime(void)
-{
-    if(Page_Current_State == Page_4_LCD)
-    {
-        LCD_MoveCursor(1,0);
-        LCD_DisplayString("T=");
-        LCD_intToString(Clock_hour);
-        LCD_DisplayCharacter(':');
-        LCD_intToString(Clock_min);
-        LCD_DisplayCharacter(':');
-        LCD_intToString(Clock_sec);
-    }
-}
-
-static void ACCS_CatchDistance(void)
-{
-    /*  ⚠️🙆‍♂️🚩Here I need to disable interrupt as I don't know when I press braking button 
-    * as may be before printing point(.) and number after point  press braking button and this lead to call DashBoard_DistanceHide() function
-    * and this make cursor position that I make disable  be at last colimn in last row and will return here to continue this code here 
-    * so this lead to make data overwrite in LCD 
-    * "this is one scenario from a lot of scenarios "
-    */
-    cli();
-    volatile uint16 Adc_value_pure = ADC_ReadChannelSingleConvertion(ADC_Channel_0);
-    distance_ACCS = (Adc_value_pure * 10) / 1023.0 ; 
-    /*  Here trying to get first number after Sign  */
-    volatile uint8 distance_after_point = ( (uint8)(distance_ACCS * 10) )  % 10;
-    LCD_MoveCursor(3,11);
-    /*  For Small LCD*/
-    //LCD_MoveCursor(1,11);
-	LCD_intToString((uint8)distance_ACCS);
-	LCD_DisplayCharacter('.');
-    LCD_intToString(distance_after_point);
-    LCD_DisplayString("M ");
-    sei();
-}
-
-
-
-static void ACCS_DicisionTake(void)
-{
-    if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
-    {
-
-        cli();
-        if((uint8)(distance_ACCS) >= 8) /*  Case 1  */
-        {
-            
-            /*  Do no thing */
-            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
-            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
-
-           
-        }
-        else if(((uint8)(distance_ACCS) >= 6)) /*  Case 2  */
-        {
-           
-            /*  in this case only turn yellow led only */
-            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
-            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
-
-          
-
-            /*  Try to return back to speed that was make fixed*/
-        }
-        else if (((uint8)(distance_ACCS) >= 4)) /*  Case 3  */
-        {
-            
-
-            /*  in this case turn yellow and red led on*/
-            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
-
-            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_ON);
-
-        }
-        else if (((uint8)(distance_ACCS) >= 2)) /*  Case 4  */
-        {
-
-
-            /*  turn yellow led on and make red led toggles continuesly with very speed */
-            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
-
-            LED_Toggle(Red_LED_PORT,Red_LED_PIN);
-
-        }   
-        else if (((uint8)(distance_ACCS) >= 0)) /*  Case 5  */
-        {
-            /*  Turn Of all leds    */
-            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
-            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
-
-
-            /*  Display Crash message   */
-            LCD_ClearScreen();
-            LCD_DisplayString((const uint8 *)"Crushed car ):");
-            
-
-            /*  flash Relay  */
-
-            /*  Disable all Button*/
-            while(1);
-        }
-        
-        sei();
-    }
-}
-
-static void App_SpeedUpdate(void)
-{
-    static volatile uint16 Prev_Adc_value_pure = 0;
-    /*  Read current value for Potentiometer that work as Accelerator  */
-    volatile uint16 Adc_value_pure = ADC_ReadChannelSingleConvertion(ADC_Channel_0);  
-    /*  Get speed that be assigned depend on next condition state  */ 
-    Temp_Speed = (uint8)( ( (200) * ((uint32) Adc_value_pure)  ) / 1023 ) ;
-
-    Diff_between_ADCS =  (sint16)Prev_Adc_value_pure - (sint16)Adc_value_pure;
-
-    if((Diff_between_ADCS > 19) || (Diff_between_ADCS < -19)) // by try found that potentiometer in real life its value vary with max change = 15 so I want change greater than 25 in CCR or CR to accept it as human change not noise in potentiometer
-    {
-        Car_Speed = Temp_Speed ;
-        if(CCS_Currnet_state == CCS_Enable)
-        {
-            CCS_Currnet_state = CCS_Disable ;
-            DashBoard_Update_CCS_State(CCS_Currnet_state);
-        }
-    }
-        cli();
-        LCD_MoveCursor(1,14);
-        /*✍️LCD_SMALL_LARGE*/
-        // LCD_MoveCursor(0,0);
-        LCD_intToString((uint8)Car_Speed) ;
-        LCD_DisplayString("KM ");
-
-        /*  used for debug only*/
-
-        // LCD_intToString(Diff_between_ADCS) ;
-        // LCD_DisplayString("     ");
-        // LCD_MoveCursor(1,0);
-        // LCD_intToString(Prev_Adc_value_pure) ;
-        // LCD_DisplayString(" ");
-        // LCD_MoveCursor(1,8);
-        // LCD_intToString(Adc_value_pure) ;
-        // LCD_DisplayString(" ");
-        sei();
-    /*  Save last change in Speed variable that will display in LCD  */
-    Prev_Adc_value_pure = Adc_value_pure ;
-
-
-}
-
-
-
-/******************************************************************************/
-
-// static void DashBoard_Init_small(void)
-// {
-//     /*  Display GearBox Current state  */
-//     LCD_MoveCursor(0,0);
-//     LCD_DisplayString((const uint8 * )"G:NC");
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
-//     LCD_DisplayCharacter('B');
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
-//     LCD_DisplayCharacter('L');
-//     LCD_DisplayCharacter(POS_LCD_False_ICON); 
-
-//     LCD_DisplayString((const uint8 * )"S0");
-
-
-//     /*  Display state of Adaptive Cruise control  */
-//     LCD_MoveCursor(1,7);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);   
-// }
-
-// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state)
-// {
-//     /*  Array carry All Characters For GearBox as make display easier using index*/
-//     uint8 GearBox_Characyer [] = {'N','D','R'};
-//     /*  Go to index that display current GearBox state*/
-//     LCD_MoveCursor(0,2);
-//     /*  Edit its state with new state given to function*/
-//     LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);    
-// }
-
-
-
-// static void DashBoard_DistanceShow_small(void)
-// {
-//     LCD_MoveCursor(1,8);
-//     LCD_DisplayString((const uint8 * )",D:");
- 
-// }
-
-// static void DashBoard_DistanceHide_small(void)
-// {
-//     LCD_MoveCursor(1,8);
-//     LCD_DisplayString((const uint8 * )"        ");
-// }
-
-// static void APP_DashBoardPage_update_small(void)
-// {
-//     uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
-//     LCD_MoveCursor(1,7);
-//     /*  Display indicator for current page  */
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
-// }

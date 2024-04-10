@@ -40,7 +40,7 @@
 #define T0_FAST_PWM_MODE                       3   //  Option 3 -----------|
 #define T0_PHASE_CORRECT_PWM_MODE              1   //  Option 4 -----------|
 //                                                                         | Here
-#define TIMER0_CURRENT_MODE         T0_NORMAL_MODE   //<-----------------|
+#define TIMER0_CURRENT_MODE         T0_FAST_PWM_MODE   //<-----------------|
 
 
 #define Enable_Interrupt_T0                1   //  Option 1 -----------|

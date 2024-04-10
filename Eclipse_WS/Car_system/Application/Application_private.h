@@ -36,6 +36,11 @@
 
 #define Value_Loading_Timer1                    ((uint16)57723)
 
+
+#define Timer0_OVF_1_sec_RTClock                    100
+#define Timer0_OVF_5_sec_DrivingMonetoring          85
+#define Timer0_OVF_Buzzer_Notify_sound              3
+
 /**************************                   Function Prototype                   **************************/
 
 /***************************Gear BOX Functions*****************************/
@@ -68,20 +73,6 @@ static void Hanndle_GrearBox_R_State(void);
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 static void Hanndle_GrearBox_D_State(void);
-
-
-
-
-
-/*
-*   @brief : this function used to get update of Buttons 
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
-static void Buttons_Update(void);
-
 
 
 
@@ -118,6 +109,7 @@ static void Buttons_Update(void);
  
  static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
 
+
  static void DashBoard_updateSpeedLimitValue(void);
 
  /*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
@@ -150,25 +142,6 @@ static void DashBoard_updateTime(void);
 
 
 
-/*
-*   @brief : this function used to Show only "Distance : " in LCD
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
- static void DashBoard_DistanceShow(void); 
-
-
-/*
-*   @brief : this function used to hide all data in last row by display white space "                  "
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
- static void DashBoard_DistanceHide(void);
-
 
 
 
@@ -185,6 +158,9 @@ static void Braking_Button_Handling(void);
 /*  Try to Ask Eng Mohamed Helmy    */
 
 void tessst (void);
+
+
+void Braking_LongPressHandle(void);
 
 
 
@@ -230,10 +206,21 @@ static void APP_KeypadUpdate(void);
 
 
 
-static void App_SpeedUpdate(void);
+static void App_CarSpeedUpdate(void);
 
 
-static void App_TimeOut_handle_DM_Time(void);
+
+// static void App_TimeOut_handle_DM_Time(void);
+
+
+/* 
+*   @brief : this function used to to handle Real Time clock and make constant time for switch between high and low for buzzer and Relay 
+*   @args  void
+*   @return: no return
+*   @synchronous / Asynchronous : Asynchronous
+*   @ Reentrant / Non Reentrant : Reentrant
+*/
+static void TImer0_OVF_Handling_Fun(void);
 
 
 /**************************************  For Small LCD ***********************/
@@ -244,3 +231,33 @@ static void App_TimeOut_handle_DM_Time(void);
     // static void DashBoard_UpdateSpeed(void);
     // static void APP_DashBoardPage_update_small(void);
 
+// /*
+// *   @brief : this function used to Show only "Distance : " in LCD
+// *   @args  void
+// *   @return: no return
+// *   @synchronous / Asynchronous : Synchronous
+// *   @ Reentrant / Non Reentrant : Reentrant
+// */
+//  static void DashBoard_DistanceShow(void); 
+
+
+// /*
+// *   @brief : this function used to hide all data in last row by display white space "                  "
+// *   @args  void
+// *   @return: no return
+// *   @synchronous / Asynchronous : Synchronous
+// *   @ Reentrant / Non Reentrant : Reentrant
+// */
+//  static void DashBoard_DistanceHide(void);
+
+
+
+
+// /*
+// *   @brief : this function used to get update of Buttons 
+// *   @args  void
+// *   @return: no return
+// *   @synchronous / Asynchronous : Synchronous
+// *   @ Reentrant / Non Reentrant : Reentrant
+// */
+// static void Buttons_Update(void);

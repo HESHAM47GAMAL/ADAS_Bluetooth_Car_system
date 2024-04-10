@@ -46,6 +46,15 @@ static volatile void (*g_CallBackPtr_T0)(void) = NULL_PTR;
             } 
         }
 
+    #elif(TIMER0_CURRENT_MODE == T0_FAST_PWM_MODE)
+        ISR(TIMER_0_OVF)
+        {
+            if(g_CallBackPtr_T0 != NULL_PTR)
+            {
+                g_CallBackPtr_T0();
+            }
+        }
+
     #endif
 
 #endif
@@ -238,6 +247,13 @@ void Timer0_CTCWaveGeneration(uint8 Ticks)
     void Timer0_FastPWMSetDutyCycle(uint8 DutyCycle_value)
     {
         OCR0 = ( ((uint16)(255)) * DutyCycle_value ) / 100 ;
+    }
+
+    void Timer0_Enable_OVR_Flow_Interrupt(void)
+    {
+        
+        /*  Enable overflow Interrupt  */
+        SET_BIT(TIMSK,TOIE0);
     }
 
 #elif(TIMER0_CURRENT_MODE == T0_PHASE_CORRECT_PWM_MODE)

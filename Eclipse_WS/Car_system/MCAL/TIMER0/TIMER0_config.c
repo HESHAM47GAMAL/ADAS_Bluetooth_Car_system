@@ -34,7 +34,7 @@
 #elif( (TIMER0_CURRENT_MODE == T0_FAST_PWM_MODE) || (TIMER0_CURRENT_MODE == T0_PHASE_CORRECT_PWM_MODE))
  
     TIMER0_ConfigType TIMER0_ConfigTypeParam = {
-        F_CPU_8_T0   ,     /*    Choose Prescaler   */ 
+        F_CPU_256_T0   ,     /*    Choose Prescaler   */ 
         T0_NON_INVERTING      /*    Choose what happen on compare match   */ 
     };
 
