@@ -90,6 +90,8 @@ static volatile uint8 Global_Speed_Limiter_value = 40 ; /*  Set intail value 40 
 
 volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
+/*  object declare for DC motor  */
+DC_Pin_Type DC_pins_Motor = {DC_RIR_1_PORT,DC_RIR_1_PIN,DC_RIR_2_PORT,DC_RIR_2_PIN };
 
 
 
@@ -104,16 +106,16 @@ enum DrivingMonetoring_Status {DM_Failed    ,   DM_Meet};
 //                            make alarm       don't make alarm     
 
 
-uint8 Speed_limit_Current_Status = Speed_Limit_Failed;
+uint8 Speed_limit_Current_Status = Speed_Limit_Meet;
 
 
-uint8 Distance_BA_Current_status = Distance_BA_Failed;
+uint8 Distance_BA_Current_status = Distance_BA_Meet;
 
 
 uint8  DrivingMonetoring_Current_Status = DM_Meet ;
 
 
-/* Carry number of interrupt happen for TImer 1 */
+/* Carry number of interrupt happen for TImer 0 */
 uint8 TimeOut_Counter = 0 ; // old varaible it used for real time and Driving monetering with Timer 1
 
 /* Varaibles used to update Real Time Clock  */
@@ -122,8 +124,7 @@ uint8 Clock_min = 30 ;
 uint8 Clock_hour = 2 ;
 
 /*  Used to store how many of kilo meters car Moved  */
-float32 Accumulative_Distance = 0 ;
-
+float64 Accumulative_Distance_KM = 0.0 ;
 
 
 /*  Carry number of overflow for 1 second for Real time clock*/
@@ -145,8 +146,6 @@ void App_StateMachineUpdate(void)
 
     Hanndle_GrearBox_R_State();
 
-    /*  it was used to take dicision as button are pressed and this function handle everything  */
-    // Buttons_Update();
 
     APP_KeypadUpdate();
 
@@ -154,13 +153,16 @@ void App_StateMachineUpdate(void)
 
     App_CarSpeedUpdate ();
 
-    App_GetDiffCarSpeed_and_limit();
+    GetDiffCarSpeed_and_limit();
 
     /*  make continous update for dashboard if I in page 2   */
     DashBoard_DrivingMonetoring_continous_Status_update();
     
     /*  used to update time if I in page 4*/
     DashBoard_updateTime();
+
+    /*  Update Kilko meters for Kilo metrers moved in Dashboard */  
+    APP_CarMovedKiloMeters();
 
 }
 
@@ -263,6 +265,7 @@ void App_Init(void)
 
     /*  Initialize Braking Button with EXT_INT 1    */
     INT1_init(FALLING_EDGE_TRIGGER,INPUT_PIN);
+
     /*  Set call back function  */
     INT1_SetCallBack(Braking_Button_Handling);
 
@@ -277,8 +280,8 @@ void App_Init(void)
     /*  Initialize pins that control direction for DC motor  */
     GPIO_SetPinDirection(DC_RIR_1_PORT,DC_RIR_1_PIN,OUTPUT_PIN);
     GPIO_SetPinDirection(DC_RIR_2_PORT,DC_RIR_2_PIN,OUTPUT_PIN);
-
-
+    /*  initialize PWM pin fo motor  */
+    DC_Motor_Init(&DC_pins_Motor);
     /*  Turn Of all of this led  */
     LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN, LED_OFF);
     LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN, LED_OFF);
@@ -288,7 +291,6 @@ void App_Init(void)
     
 
     /*  Set callback function that will called when Timeout happen to turn of buzzer and handle anything another    */
-    // Timer0_SetCallBack(Buzzer_timeOutOff);
     Timer0_SetCallBack(TImer0_OVF_Handling_Fun);
     
     /*  Enable Overflow Interrupt  */
@@ -300,7 +302,7 @@ void App_Init(void)
     // /*  Set callback for finction that will hanle DM and Time */
     // Timer1_SetCallBack(App_TimeOut_handle_DM_Time);
 
-    Timer1_ProvideClock();
+    // Timer1_ProvideClock();
 
     /*  Initialize ADC to be used by Potentiometer to accelerate  */
     ADC_Init();
@@ -313,8 +315,6 @@ void App_Init(void)
 
     /*  Intialize Bash Board for Car*/
     DashBoard_Init();
-    /*✍️LCD_SMALL_LARGE*/
-    //DashBoard_Init_small();
 }
 
 
@@ -329,6 +329,11 @@ static void DashBoard_Init(void)
     /*  Display GearBox Current state  */
     LCD_MoveCursor(0,14);
     LCD_DisplayString((const uint8 * )"GB : N");
+
+    /*  Display kilo meters counter value  */
+    LCD_MoveCursor(1,0);
+    LCD_DisplayString((const uint8 * )"KMC:"); 
+    LCD_FloatToString(Accumulative_Distance_KM);
 
     /*  Display speed */
     LCD_MoveCursor(1,11);
@@ -351,7 +356,7 @@ static void DashBoard_Init(void)
     LCD_DisplayCharacter(POS_LCD_False_ICON);
 
     /*  call function that Display pages and @ first when start program I will be in Page 2 */
-    APP_DashBoardPage_update();
+    DashBoardPageFooter_update();
     sei();
 }
 
@@ -375,8 +380,6 @@ static void DashBoard_Update_CCS_State(uint8 ACCS_state)
         
         /*  Go to index that display current GearBox state*/
         LCD_MoveCursor(2,3);
-        /*✍️LCD_SMALL_LARGE*/
-        //LCD_MoveCursor(0,4);
 
         /*  Edit its state with new state given to function*/
         if(CCS_Currnet_state == CCS_Enable)
@@ -406,13 +409,8 @@ static void DashBoard_Update_BrakingAssist_State(uint8 BA_state)
 static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
 {
     cli();
-    /*  Should don't change state of CCS before that I in page 2 that has this feature  else will happen LCD data corruption    */
-    // if(Page_Current_State == Page_2_LCD)
-    // {
         /*  Go to index that display current GearBox state*/
         LCD_MoveCursor(2,13);
-        /*✍️LCD_SMALL_LARGE*/
-        //LCD_MoveCursor(0,6);
 
         /*  Edit its state with new state given to function*/
         if(SL_state == SpeedLimit_Enable)
@@ -420,7 +418,6 @@ static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
 
         else
             LCD_DisplayCharacter(POS_LCD_False_ICON);
-    // }
     sei();
 }
 
@@ -439,7 +436,7 @@ static void DashBoard_updateSpeedLimitValue(void)
 }
 
 
-static void App_GetDiffCarSpeed_and_limit(void)
+static void GetDiffCarSpeed_and_limit(void)
 {
     if(Car_Speed > Global_Speed_Limiter_value)
     {
@@ -452,7 +449,7 @@ static void App_GetDiffCarSpeed_and_limit(void)
     }
     if(Page_Current_State == Page_3_LCD)
     {
-        /*  Make update in LCD  and give sound notify  */
+        /*  Make update in LCD  and give sound notify */
         DashBoard_SpeedLimit_status_update();
     }
     else /* give sound notify  */
@@ -519,7 +516,6 @@ static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state)
 static void DashBoard_DrivingMonetoring_Status_update(void)
 {
     cli();
-    // اكتب ام الفانكشن ده لما تيجي 👀👀
     LCD_MoveCursor(0,10);
     if(DrivingMonetoring_Current_State == DirivingMonetoring_Enable)
     {
@@ -550,7 +546,7 @@ static void DashBoard_DrivingMonetoring_continous_Status_update(void)
 
 
 
-static void APP_DashBoardPage_update(void)
+static void DashBoardPageFooter_update(void)
 {
     
     uint8 pages_option [4][4] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
@@ -567,7 +563,7 @@ static void APP_DashBoardPage_update(void)
 
 
 
-static void APP_DashBoard_SwitchPages(void)
+static void DashBoard_SwitchPages(void)
 {
     cli();
     LCD_MoveCursor(0,0);
@@ -582,6 +578,11 @@ static void APP_DashBoard_SwitchPages(void)
         LCD_DisplayString((const uint8 * )"DM Status:");
         /*  Call function that will handle status for DM */
         DashBoard_DrivingMonetoring_Status_update();
+
+        /*  Display kilo meters counter value  */
+        LCD_MoveCursor(1,0);
+        LCD_DisplayString((const uint8 * )"KMC:"); 
+        LCD_FloatToString(Accumulative_Distance_KM);
     }
     else if(Page_Current_State == Page_1_LCD)
     {
@@ -681,7 +682,6 @@ static void APP_KeypadUpdate(void)
         {
             GearBox_IsStillPressed = YES_Condition ;
             /* turn buzzer on and give timer 0 clock and set timeout    */
-            // Buzzer_NotifySound();
             Buzzer_GiveSound = YES_Condition; 
 
             /*  Go to next state for gearbox*/
@@ -694,8 +694,7 @@ static void APP_KeypadUpdate(void)
 
             /*  call function to update gearbox state in Dashboard*/
             DashBoard_Update_GearBox_state(GearBox_Current_State);
-            /*✍️LCD_SMALL_LARGE*/
-            //DashBoard_Update_GearBox_state_small(GearBox_Current_State);
+
         }
         
     }
@@ -723,7 +722,6 @@ static void APP_KeypadUpdate(void)
             {
                 CCS_IsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                // Buzzer_NotifySound();
                 Buzzer_GiveSound = YES_Condition; 
 
                 if(CCS_Currnet_state == CCS_Disable ) 
@@ -733,8 +731,6 @@ static void APP_KeypadUpdate(void)
                     CCS_Currnet_state = CCS_Enable;
                     DashBoard_Update_CCS_State(CCS_Currnet_state);
                     
-                    //DashBoard_DistanceShow();
-                    //DashBoard_DistanceShow_small();
                 }
                 else
                 {
@@ -747,9 +743,6 @@ static void APP_KeypadUpdate(void)
 
                     DashBoard_Update_CCS_State(CCS_Currnet_state);
 
-                    
-                    //DashBoard_DistanceHide();
-                    //DashBoard_DistanceHide_small();
                 }
             }
             
@@ -776,7 +769,6 @@ static void APP_KeypadUpdate(void)
             {
                 SL_ON_OFFIsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                // Buzzer_NotifySound();
                 Buzzer_GiveSound = YES_Condition; 
 
                 if(SpeedLimit_Current__State == SpeedLimit_Disable)
@@ -816,7 +808,6 @@ static void APP_KeypadUpdate(void)
             {
                 BrakingAssit_IsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                // Buzzer_NotifySound();
                 Buzzer_GiveSound = YES_Condition; 
 
                 if(BrakingAssist_Current_State == BrakingAssist_Disable)
@@ -834,7 +825,7 @@ static void APP_KeypadUpdate(void)
                 /*  As if I in page braking Assist and Enable or disable  need to update*/
                 if(Page_Current_State == Page_1_LCD)
                 {
-                    APP_DashBoard_SwitchPages();    
+                    DashBoard_SwitchPages();    
                 }
             }
         }
@@ -851,7 +842,6 @@ static void APP_KeypadUpdate(void)
                 DrivingMonetoring_IsStillPressed = YES_Condition ;
 
                 /* turn buzzer on and give timer 0 clock and set timeout    */
-                //Buzzer_NotifySound();
                 Buzzer_GiveSound = YES_Condition; 
                 
                 if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
@@ -859,11 +849,6 @@ static void APP_KeypadUpdate(void)
                     DrivingMonetoring_Current_State = DirivingMonetoring_Enable ;
                     /*  Update in LCD   */
                     DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
-                    
-                    /*  Provide clock to Timer 1 to start count  */
-                    Timer1_ProvideClock();
-                    /*  Load timer with value that when overflow occur will happen after 1 second  */
-                    Timer1_UpdateValue(Value_Loading_Timer1);
 
                     /*  Make counter start from zero Again  */
                     // TimeOut_Counter = 0 ;//old one when I use timer1
@@ -910,11 +895,10 @@ static void APP_KeypadUpdate(void)
                 Page_Current_State = Page_1_LCD ;
             }
             /*  Call function that handle change in first two */
-            APP_DashBoard_SwitchPages();
+            DashBoard_SwitchPages();
             /*  Call function that will handle display in LCD*/
-            APP_DashBoardPage_update();
-            /*✍️LCD_SMALL_LARGE*/
-            //APP_DashBoardPage_update_small();
+            DashBoardPageFooter_update();
+
         }
     }
     else 
@@ -944,11 +928,10 @@ static void APP_KeypadUpdate(void)
                 Page_Current_State = Page_4_LCD ;
             }
             /*  Call function that handle change in first two */
-            APP_DashBoard_SwitchPages();
+            DashBoard_SwitchPages();
             /*  Call function that will handle display in LCD*/
-            APP_DashBoardPage_update();
-            /*✍️LCD_SMALL_LARGE*/
-            // APP_DashBoardPage_update_small();
+            DashBoardPageFooter_update();
+
         }
     }
     else 
@@ -1066,7 +1049,6 @@ static void Braking_Button_Handling(void)
         /*  So when I release utton will make Rising Edge so I need to make setup to detect this state to turn led off  */
         INT1_init(RISING_EDGE_TRIGGER,INPUT_PIN); /*    If swap between that command and next command will face problem that If I make very short press will face problem  that led will turn on only not turn off also and this not required*/
 
-        // Buzzer_NotifySound();
         Buzzer_GiveSound = YES_Condition; 
 
         /*  Make update to state    */
@@ -1194,6 +1176,7 @@ void Braking_LongPressHandle(void)
 
 static void DashBoard_updateTime(void)
 {
+    cli();
     if(Page_Current_State == Page_4_LCD)
     {
         LCD_MoveCursor(1,0);
@@ -1229,6 +1212,7 @@ static void DashBoard_updateTime(void)
         LCD_DisplayCharacter(' ');
         
     }
+    sei();
 }
 
 static void ACCS_CatchDistance(void)
@@ -1339,6 +1323,9 @@ static void App_CarSpeedUpdate(void)
         Car_Speed = Temp_Speed ;
         Timer0_Overflow_counter_DM =0 ; // when there are new change in potentiometer (accelemetor) reset time counter for Driving monetering 
         
+        /*  Change state to update in LCD*/
+        DrivingMonetoring_Current_Status = DM_Meet ;
+
         if((CCS_Currnet_state == CCS_Enable) && (GearBox_Current_State == D_GearBox))
         {
             /*  As in requirement Cruise control will be Disabled when press in accelerator pedal if I in "D" Gearbox  and CCS was activated */
@@ -1348,24 +1335,26 @@ static void App_CarSpeedUpdate(void)
     }
         cli();
         LCD_MoveCursor(1,14);
-        /*✍️LCD_SMALL_LARGE*/
-        // LCD_MoveCursor(0,0);
+        /*  call function to handle speed for motor */
         LCD_intToString((uint8)Car_Speed) ;
         LCD_DisplayString("KM ");
 
-        /*  used for debug only
-
-        // LCD_intToString(Diff_between_ADCS) ;
-        // LCD_DisplayString("     ");
-        // LCD_MoveCursor(1,0);
-        // LCD_intToString(Prev_Adc_value_pure) ;
-        // LCD_DisplayString(" ");
-        // LCD_MoveCursor(1,8);
-        // LCD_intToString(Adc_value_pure) ;
-        // LCD_DisplayString(" ");
-
-        */
-
+        /*  Update Dc motor speed  */
+        if(GearBox_Current_State == N_GearBox)
+        {
+            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
+        }
+        else if(GearBox_Current_State == D_GearBox)
+        {
+            uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
+            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_CW,(uint8)Speed_0_100);
+        }
+        else if(GearBox_Current_State == R_GearBox)
+        {
+            uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
+            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_ACW,(uint8)Speed_0_100);
+        }
+        
         sei();
     /*  Save last change in Speed variable that will display in LCD  */
     Prev_Adc_value_pure = Adc_value_pure ;
@@ -1373,45 +1362,14 @@ static void App_CarSpeedUpdate(void)
 }
 
 
-static void App_TimeOut_handle_DM_Time(void)
-{
-    /*  Increament by one*/
-    TimeOut_Counter++;
-    Timer1_UpdateValue(Value_Loading_Timer1);
 
-    /*  No need to increment this variable as DM disabled  */
-    if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
-    {
-        TimeOut_Counter = 0 ;
-    }
-
-    if(TimeOut_Counter == 5)
-    {
-        TimeOut_Counter = 0;
-        /*  Here happen time out that it may be user is in Sleep  */
-        DrivingMonetoring_Current_Status = DM_Failed ;
-
-    }
-
-    Clock_sec ++ ;
-    if(Clock_sec == 60)
-    {
-        Clock_sec =  0 ;
-        Clock_min ++;
-    }
-    if(Clock_min == 60)
-    {
-        Clock_min = 0 ;
-        Clock_hour ++;
-    }
-
-    /*  Display total distance  */
-    Accumulative_Distance += (Car_Speed / 100.0);
-
-}
-
+/*  👀👀👀👀 Look Here function handle Time overflow    */
 static void TImer0_OVF_Handling_Fun(void)
 {
+    /*  Here handle */
+    if( (GearBox_Current_State == D_GearBox) || (GearBox_Current_State == R_GearBox) )
+    
+    
     Timer0_Overflow_counter_DM++; 
     /*  No need to increment this variable as DM disabled  */
     if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
@@ -1447,6 +1405,18 @@ static void TImer0_OVF_Handling_Fun(void)
     if(Timer0_Overflow_Counter_RTClock == Timer0_OVF_1_sec_RTClock)
     {
         Timer0_Overflow_Counter_RTClock = 0;
+        /*  handle update of car moved Kilo meters  */
+        /*  Distance = speed * time   -> and speed = KM/H  so distance = (KM/H) * H 
+        but as I make Demo I will not wait hour for update so I make update for every second
+        so equation will be Distance = Speed * 1sec / 60
+        */
+
+       if((GearBox_Current_State == D_GearBox) || (GearBox_Current_State == R_GearBox))
+       {
+            /*  Must take count when moving in D or R mode*/
+            Accumulative_Distance_KM += Car_Speed / 60.0 ; 
+       }
+
         /*  This is part for update real time clock  */
         Clock_sec ++ ;
         if(Clock_sec == 60)
@@ -1465,60 +1435,26 @@ static void TImer0_OVF_Handling_Fun(void)
 }
 
 
-// static void Buzzer_NotifySound(void)
-// {
-//     /*  initialize Timer register with zero value   */
-//     Timer0_UpdateValue(0);
-//     /*  Turn Buzzer on  */
-//     Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_ON);
-//     /*  Timer provide clock  */
-//     Timer0_ProvideClock();
-
-   
-
-// }
-
-
-// void Buzzer_timeOutOff(void)
-// {
-//     Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
-//     Timer0_StopClock();
-// }
-
+static void APP_CarMovedKiloMeters(void)
+{
+    if(Page_Current_State == Page_2_LCD)
+    {
+        cli();
+        LCD_MoveCursor(1,4);
+        LCD_FloatToString(Accumulative_Distance_KM);
+        
+        sei();
+    }
+    else 
+    {
+        /*  Do Nothing  */
+    }
+}
 
 
 /******************************************************************************/
 
-// static void DashBoard_Init_small(void)
-// {
-//     /*  Display GearBox Current state  */
-//     LCD_MoveCursor(0,0);
-//     LCD_DisplayString((const uint8 * )"G:NC");
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
-//     LCD_DisplayCharacter('B');
-//     LCD_DisplayCharacter(POS_LCD_False_ICON);
-//     LCD_DisplayCharacter('L');
-//     LCD_DisplayCharacter(POS_LCD_False_ICON); 
 
-//     LCD_DisplayString((const uint8 * )"S0");
-
-
-//     /*  Display state of Adaptive Cruise control  */
-//     LCD_MoveCursor(1,7);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Selected);
-//     LCD_DisplayCharacter(POS_LCD_Page_Not_Selected);   
-// }
-
-// static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state)
-// {
-//     /*  Array carry All Characters For GearBox as make display easier using index*/
-//     uint8 GearBox_Characyer [] = {'N','D','R'};
-//     /*  Go to index that display current GearBox state*/
-//     LCD_MoveCursor(0,2);
-//     /*  Edit its state with new state given to function*/
-//     LCD_DisplayCharacter(GearBox_Characyer[GearBox_state]);    
-// }
 
 
 
@@ -1533,16 +1469,6 @@ static void TImer0_OVF_Handling_Fun(void)
 // {
 //     LCD_MoveCursor(1,8);
 //     LCD_DisplayString((const uint8 * )"        ");
-// }
-
-// static void APP_DashBoardPage_update_small(void)
-// {
-//     uint8 pages_option [3][3] = { {POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected , POS_LCD_Page_Not_Selected} , {POS_LCD_Page_Not_Selected , POS_LCD_Page_Not_Selected , POS_LCD_Page_Selected} };
-//     LCD_MoveCursor(1,7);
-//     /*  Display indicator for current page  */
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][0]);
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][1]);
-//     LCD_DisplayCharacter(pages_option[Page_Current_State][2]);
 // }
 
 

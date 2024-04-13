@@ -434,7 +434,57 @@ void LCD_DisplayCustomCharacterRowCol(uint8 location , uint8 row ,uint8 col)
 
 void LCD_intToString(uint32 data)
 {
-	 uint8 string_buff[17];// I write char not sint8_t(signed char ) to avoid warning
-	 itoa(data , string_buff , 10); /* Use itoa C function to convert the data to its corresponding ASCII value, 10 for decimal */
-	 LCD_DisplayString( (uint8_t *)string_buff);
+    uint8 string_buff[17];// I write char not sint8_t(signed char ) to avoid warning
+    itoa(data , string_buff , 10); /* Use itoa C function to convert the data to its corresponding ASCII value, 10 for decimal */
+    LCD_DisplayString( (uint8_t *)string_buff);
+}
+
+void LCD_FloatToString(float64 num)
+{
+    uint8 str[8];
+    
+    int wholePart = (int)num;
+
+    // Extract fractional part
+    float fractionalPart = num - wholePart;
+	
+    // convert integer part to string
+    int i = 0;
+    while (wholePart != 0) {
+        int rem = wholePart % 10;
+        str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
+        wholePart = wholePart/10;
+    }
+
+    // Reverse the string
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+
+    // Add decimal point
+    str[i] = '.';
+
+    // Convert fractional part to string
+    fractionalPart = fractionalPart * 100;  // for 2 decimal places
+    int fractionalPartInt = (int)fractionalPart;
+    int j = i + 1;
+    uint8 NumbersAfterPoint =0 ;
+    while (fractionalPartInt != 0) {
+        NumbersAfterPoint++;
+        int rem = fractionalPartInt % 10;
+        str[j++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
+        fractionalPartInt = fractionalPartInt/10;
+    }
+    str[j] = '\0';  // end of string
+    LCD_DisplayString( (uint8_t *)str);
+    if(NumbersAfterPoint == 1)
+    {
+        LCD_DisplayString( (uint8_t *)" ");
+    }
 }

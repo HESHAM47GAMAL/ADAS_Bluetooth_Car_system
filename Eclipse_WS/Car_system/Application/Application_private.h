@@ -37,9 +37,10 @@
 #define Value_Loading_Timer1                    ((uint16)57723)
 
 
-#define Timer0_OVF_1_sec_RTClock                    100
+#define Timer0_OVF_1_sec_RTClock                    8
 #define Timer0_OVF_5_sec_DrivingMonetoring          85
 #define Timer0_OVF_Buzzer_Notify_sound              3
+
 
 /**************************                   Function Prototype                   **************************/
 
@@ -109,23 +110,23 @@ static void Hanndle_GrearBox_D_State(void);
  
  static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state);
 
+ /*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
+ static void DashBoard_SpeedLimit_status_update(void);
 
  static void DashBoard_updateSpeedLimitValue(void);
 
- /*  tell me status for Speed Limit if it D , 🔔 or 🔇*/
- static void DashBoard_SpeedLimit_status_update(void);
+
+
  
  static void DashBoard_Update_BrakingAssist_State(uint8 BA_state);
 
 
+ static void DashBoardPageFooter_update(void);
 
 
- static void APP_DashBoardPage_update(void);
+static void DashBoard_SwitchPages(void);
 
-
-static void APP_DashBoard_SwitchPages(void);
-
-static void App_GetDiffCarSpeed_and_limit(void);
+static void GetDiffCarSpeed_and_limit(void);
 
 
 
@@ -164,26 +165,6 @@ void Braking_LongPressHandle(void);
 
 
 
-/*
-*   @brief : this function is used to set buzzer high and initialize timeout period 
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
-static void Buzzer_NotifySound(void);
-
-/*
-*   @brief : this function is program that will be called (ISR) when Timeout happen as turn buzzer off
-*   @args  void
-*   @return: no return
-*   @synchronous / Asynchronous : Synchronous
-*   @ Reentrant / Non Reentrant : Reentrant
-*/
-void Buzzer_timeOutOff(void);
-
-
-
 
 /*
 *   @brief : this function used to get last value from Potentiometer and Display it
@@ -210,8 +191,6 @@ static void App_CarSpeedUpdate(void);
 
 
 
-// static void App_TimeOut_handle_DM_Time(void);
-
 
 /* 
 *   @brief : this function used to to handle Real Time clock and make constant time for switch between high and low for buzzer and Relay 
@@ -221,6 +200,9 @@ static void App_CarSpeedUpdate(void);
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 static void TImer0_OVF_Handling_Fun(void);
+
+
+static void APP_CarMovedKiloMeters(void);
 
 
 /**************************************  For Small LCD ***********************/

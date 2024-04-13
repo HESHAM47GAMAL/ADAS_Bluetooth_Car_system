@@ -55,8 +55,8 @@
     #define KEYPAD_COL_PORT         PORTD_ID
 
     #define     KEYPAD_COL0         PIN7_ID
-    #define     KEYPAD_COL1         PIN6_ID
-    #define     KEYPAD_COL2         PIN5_ID
+    #define     KEYPAD_COL1         PIN5_ID
+    #define     KEYPAD_COL2         PIN4_ID
     #define     KEYPAD_COL3         PIN3_ID
 
 

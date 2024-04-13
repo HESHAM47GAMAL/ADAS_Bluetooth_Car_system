@@ -23,6 +23,7 @@
 #include "../Hal/Buzzer/Buzzer_interface.h"
 #include "../HAL/Potentiometer/POT_interface.h"
 #include "../HAL/KEYPAD/Keypad_interface.h"
+#include "../HAL/DC_Motor/DC_Motor_interface.h"
 
 #include "../MCAL/EXT_INT/EXT_INT_interface.h"
 #include "../MCAL/TIMER0/TIMER0_interface.h"
