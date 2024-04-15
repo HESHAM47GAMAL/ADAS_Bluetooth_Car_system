@@ -8,16 +8,22 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include MCAL/USART/subdir.mk
 -include MCAL/TIMER1/subdir.mk
 -include MCAL/TIMER0/subdir.mk
+-include MCAL/I2C/subdir.mk
 -include MCAL/GPIO/subdir.mk
 -include MCAL/EXT_INT/subdir.mk
 -include MCAL/ADC/subdir.mk
+-include HAL/ULTRASONIC/subdir.mk
 -include HAL/Potentiometer/subdir.mk
 -include HAL/LED/subdir.mk
 -include HAL/LCD/subdir.mk
 -include HAL/KEYPAD/subdir.mk
+-include HAL/EXT_EEPROM/subdir.mk
+-include HAL/DC_Motor/subdir.mk
 -include HAL/Buzzer/subdir.mk
+-include HAL/Bluetooth/subdir.mk
 -include HAL/BUTTON/subdir.mk
 -include Application/subdir.mk
 -include subdir.mk

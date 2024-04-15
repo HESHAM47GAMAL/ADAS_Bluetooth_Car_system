@@ -1,0 +1,7 @@
+MCAL/USART/USART_config.o MCAL/USART/USART_config.o:  \
+ ../MCAL/USART/USART_config.c ../MCAL/USART/USART_config.h \
+  ../MCAL/USART/../../SERVICE/STD_TYPES.h
+
+../MCAL/USART/USART_config.h:
+
+../MCAL/USART/../../SERVICE/STD_TYPES.h:

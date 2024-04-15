@@ -431,6 +431,11 @@ void Bluetooth_Buffer_Decision(void)
                 /*  call function update state of Brake assist*/
                 DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
             }
+            /*  As if I in page braking Assist and Enable or disable  need to update*/
+            if(Page_Current_State == Page_1_LCD)
+            {
+                DashBoard_SwitchPages();    
+            }
         }
         /* This message related to Speed Limiter system */
         else if(UART_Buffer[0] == '&')
@@ -574,24 +579,27 @@ static void DashBoard_Update_BrakingAssist_State(uint8 BA_state)
 
 static void DashBoard_BrakingAssist_Status_update(void)
 {
-    cli();
-    LCD_MoveCursor(0,11);
-    if(BrakingAssist_Current_State == BrakingAssist_Enable)
+    if(Page_Current_State == Page_1_LCD)
     {
-        if(Distance_BA_Current_status == Distance_BA_Meet)
+        cli();
+        LCD_MoveCursor(0,11);
+        if(BrakingAssist_Current_State == BrakingAssist_Enable)
         {
-            LCD_DisplayCharacter(POS_LCD_Mute_ICON);
+            if(Distance_BA_Current_status == Distance_BA_Meet)
+            {
+                LCD_DisplayCharacter(POS_LCD_Mute_ICON);
+            }
+            else
+            {
+                LCD_DisplayCharacter(POS_LCD_Alarm_ICON);
+            }
         }
         else
         {
-            LCD_DisplayCharacter(POS_LCD_Alarm_ICON);
+            LCD_DisplayCharacter('D'); //system disabled
         }
+        sei();
     }
-    else
-    {
-        LCD_DisplayCharacter('D'); //system disabled
-    }
-    sei();
 }
 
 static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
@@ -1002,7 +1010,7 @@ static void APP_KeypadUpdate(void)
                 cli();
                 if(SpeedLimit_Current__State == SpeedLimit_Enable)
                     Bluetooth_Send((const uint8 * )"&1");
-                else if(SpeedLimit_Current__State == SpeedLimit_Enable)
+                else if(SpeedLimit_Current__State == SpeedLimit_Disable)
                     Bluetooth_Send((const uint8 * )"&0");
 
                 _delay_ms(10);
@@ -1336,7 +1344,7 @@ static void Engine_Control_Handling(void)
         LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
         LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
         /*  Send to mobile app that engine is power off  */
-        Bluetooth_Send((const uint8 * )"@");
+        Bluetooth_Send((const uint8 * )"@@@");
         _delay_ms(10);
 
         while(1);
@@ -1655,6 +1663,10 @@ static void ACCS_DicisionTake(void)
             DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
             LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
             LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+            
+            /*  send message to mobile app to inform that car made accedint */
+            Bluetooth_Send((const uint8 * )"##");
+            _delay_ms(10);
             while(1)
             {
                 GPIO_TogglePin(Relay_PORT,Relay_PIN);

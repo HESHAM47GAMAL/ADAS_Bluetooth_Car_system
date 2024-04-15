@@ -28,16 +28,14 @@
 
 
 /**************************                   Definitions macro                   **************************/
-#define Configuration_NUM 				3
+#define Configuration_NUM 				1
 
 
 // Here write all configuration you want for pins
 
 GPIO_PORT_PIN_config GPIO_configParam [Configuration_NUM] = {
 
-		{PORTC_ID , PIN0_ID , OUTPUT_PIN}, //0
-		{PORTA_ID , PIN0_ID , OUTPUT_PIN},
-		{PORTA_ID , PIN1_ID , OUTPUT_PIN},
+		{PORTD_ID , PIN0_ID , INPUT_PIN}, //0
 
 
 

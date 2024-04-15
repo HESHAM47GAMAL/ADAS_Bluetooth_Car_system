@@ -22,15 +22,21 @@ C_DEPS :=
 SUBDIRS := \
 Application \
 HAL/BUTTON \
+HAL/Bluetooth \
 HAL/Buzzer \
+HAL/DC_Motor \
+HAL/EXT_EEPROM \
 HAL/KEYPAD \
 HAL/LCD \
 HAL/LED \
 HAL/Potentiometer \
+HAL/ULTRASONIC \
 MCAL/ADC \
 MCAL/EXT_INT \
 MCAL/GPIO \
+MCAL/I2C \
 MCAL/TIMER0 \
 MCAL/TIMER1 \
+MCAL/USART \
 . \
 

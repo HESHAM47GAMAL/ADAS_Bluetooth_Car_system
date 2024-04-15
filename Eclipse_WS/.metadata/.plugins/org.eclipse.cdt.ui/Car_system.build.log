@@ -1,41 +1,123 @@
-15:15:54 **** Incremental Build of configuration Debug for project Car_system ****
+01:18:48 **** Build of configuration Debug for project Car_system ****
 make all 
+Building file: ../MCAL/USART/USART_config.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/USART/USART_config.d" -MT"MCAL/USART/USART_config.o" -c -o "MCAL/USART/USART_config.o" "../MCAL/USART/USART_config.c"
+Finished building: ../MCAL/USART/USART_config.c
+ 
+Building file: ../MCAL/USART/USART_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/USART/USART_program.d" -MT"MCAL/USART/USART_program.o" -c -o "MCAL/USART/USART_program.o" "../MCAL/USART/USART_program.c"
+../MCAL/USART/USART_program.c: In function 'USART_receiveByteAsynchCallBack':
+../MCAL/USART/USART_program.c:209: warning: function return types not compatible due to 'volatile'
+../MCAL/USART/USART_program.c: In function 'USART_receiveStringAsynchCallBack':
+../MCAL/USART/USART_program.c:215: warning: function return types not compatible due to 'volatile'
+Finished building: ../MCAL/USART/USART_program.c
+ 
+Building file: ../MCAL/TIMER1/TIMER1_config.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/TIMER1/TIMER1_config.d" -MT"MCAL/TIMER1/TIMER1_config.o" -c -o "MCAL/TIMER1/TIMER1_config.o" "../MCAL/TIMER1/TIMER1_config.c"
+Finished building: ../MCAL/TIMER1/TIMER1_config.c
+ 
+Building file: ../MCAL/TIMER1/TIMER1_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/TIMER1/TIMER1_program.d" -MT"MCAL/TIMER1/TIMER1_program.o" -c -o "MCAL/TIMER1/TIMER1_program.o" "../MCAL/TIMER1/TIMER1_program.c"
+../MCAL/TIMER1/TIMER1_program.c: In function 'Timer1_SetCallBack':
+../MCAL/TIMER1/TIMER1_program.c:29: warning: function return types not compatible due to 'volatile'
+Finished building: ../MCAL/TIMER1/TIMER1_program.c
+ 
+Building file: ../MCAL/I2C/I2C_config.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/I2C/I2C_config.d" -MT"MCAL/I2C/I2C_config.o" -c -o "MCAL/I2C/I2C_config.o" "../MCAL/I2C/I2C_config.c"
+Finished building: ../MCAL/I2C/I2C_config.c
+ 
+Building file: ../MCAL/I2C/I2C_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"MCAL/I2C/I2C_program.d" -MT"MCAL/I2C/I2C_program.o" -c -o "MCAL/I2C/I2C_program.o" "../MCAL/I2C/I2C_program.c"
+Finished building: ../MCAL/I2C/I2C_program.c
+ 
+Building file: ../HAL/ULTRASONIC/ULTRASONIC_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/ULTRASONIC/ULTRASONIC_program.d" -MT"HAL/ULTRASONIC/ULTRASONIC_program.o" -c -o "HAL/ULTRASONIC/ULTRASONIC_program.o" "../HAL/ULTRASONIC/ULTRASONIC_program.c"
+../HAL/ULTRASONIC/ULTRASONIC_program.c:20:1: warning: "F_CPU" redefined
+<command-line>: warning: this is the location of the previous definition
+In file included from ../HAL/ULTRASONIC/ULTRASONIC_program.c:21:
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:90:3: warning: #warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+Finished building: ../HAL/ULTRASONIC/ULTRASONIC_program.c
+ 
+Building file: ../HAL/LCD/LCD_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/LCD/LCD_program.d" -MT"HAL/LCD/LCD_program.o" -c -o "HAL/LCD/LCD_program.o" "../HAL/LCD/LCD_program.c"
+../HAL/LCD/LCD_program.c:20:1: warning: "F_CPU" redefined
+<command-line>: warning: this is the location of the previous definition
+In file included from ../HAL/LCD/LCD_program.c:21:
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:90:3: warning: #warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+../HAL/LCD/LCD_program.c: In function 'LCD_intToString':
+../HAL/LCD/LCD_program.c:438: warning: pointer targets in passing argument 2 of 'itoa' differ in signedness
+Finished building: ../HAL/LCD/LCD_program.c
+ 
+Building file: ../HAL/KEYPAD/Keypad_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/KEYPAD/Keypad_program.d" -MT"HAL/KEYPAD/Keypad_program.o" -c -o "HAL/KEYPAD/Keypad_program.o" "../HAL/KEYPAD/Keypad_program.c"
+../HAL/KEYPAD/Keypad_program.c:20: warning: excess elements in array initializer
+../HAL/KEYPAD/Keypad_program.c:20: warning: (near initialization for 'sequelizeCOL')
+Finished building: ../HAL/KEYPAD/Keypad_program.c
+ 
+Building file: ../HAL/EXT_EEPROM/EXT_EEPROM_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/EXT_EEPROM/EXT_EEPROM_program.d" -MT"HAL/EXT_EEPROM/EXT_EEPROM_program.o" -c -o "HAL/EXT_EEPROM/EXT_EEPROM_program.o" "../HAL/EXT_EEPROM/EXT_EEPROM_program.c"
+../HAL/EXT_EEPROM/EXT_EEPROM_program.c: In function 'EEPROM_writeByte':
+../HAL/EXT_EEPROM/EXT_EEPROM_program.c:23: warning: implicit declaration of function 'I2C_Start'
+Finished building: ../HAL/EXT_EEPROM/EXT_EEPROM_program.c
+ 
+Building file: ../HAL/DC_Motor/DC_Motor_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/DC_Motor/DC_Motor_program.d" -MT"HAL/DC_Motor/DC_Motor_program.o" -c -o "HAL/DC_Motor/DC_Motor_program.o" "../HAL/DC_Motor/DC_Motor_program.c"
+Finished building: ../HAL/DC_Motor/DC_Motor_program.c
+ 
+Building file: ../HAL/Bluetooth/Bluetooth_program.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"HAL/Bluetooth/Bluetooth_program.d" -MT"HAL/Bluetooth/Bluetooth_program.o" -c -o "HAL/Bluetooth/Bluetooth_program.o" "../HAL/Bluetooth/Bluetooth_program.c"
+Finished building: ../HAL/Bluetooth/Bluetooth_program.c
+ 
 Building file: ../Application/Application_program.c
 Invoking: AVR Compiler
 avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"Application/Application_program.d" -MT"Application/Application_program.o" -c -o "Application/Application_program.o" "../Application/Application_program.c"
+../Application/Application_program.c:20:1: warning: "F_CPU" redefined
+<command-line>: warning: this is the location of the previous definition
+In file included from ../Application/Application_program.c:21:
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:90:3: warning: #warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
 ../Application/Application_program.c: In function 'DashBoard_updateSpeedLimitValue':
-../Application/Application_program.c:436: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c: In function 'APP_DashBoard_SwitchPages':
-../Application/Application_program.c:574: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:576: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:591: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:593: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:598: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:605: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:607: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:609: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c:616: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:629: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c: In function 'DashBoard_SwitchPages':
+../Application/Application_program.c:768: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:778: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:796: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:801: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:807: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:814: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:816: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:818: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:825: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: In function 'APP_KeypadUpdate':
-../Application/Application_program.c:642: warning: unused variable 'SL_DecIsStillPressed'
-../Application/Application_program.c:640: warning: unused variable 'SL_IncIsStillPressed'
-../Application/Application_program.c: In function 'DashBoard_updateTime':
-../Application/Application_program.c:1200: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c: In function 'ACCS_CatchDistance':
-../Application/Application_program.c:1253: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
-../Application/Application_program.c: In function 'App_CarSpeedUpdate':
-../Application/Application_program.c:1354: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
+../Application/Application_program.c:851: warning: unused variable 'SL_DecIsStillPressed'
+../Application/Application_program.c:849: warning: unused variable 'SL_IncIsStillPressed'
+../Application/Application_program.c: In function 'Engine_Control_Handling':
+../Application/Application_program.c:1301: warning: passing argument 2 of 'EEPROM_readByte' discards qualifiers from pointer target type
+../Application/Application_program.c:1304: warning: pointer targets in passing argument 2 of 'EEPROM_readByte' differ in signedness
+../Application/Application_program.c:1338: warning: pointer targets in passing argument 1 of 'LCD_DisplayString' differ in signedness
 ../Application/Application_program.c: At top level:
-../Application/Application_program.c:169: warning: 'Hanndle_GrearBox_D_State' defined but not used
-../Application/Application_private.h:174: warning: 'Buzzer_NotifySound' declared 'static' but never defined
-../Application/Application_program.c:1235: warning: 'ACCS_CatchDistance' defined but not used
-../Application/Application_program.c:1260: warning: 'ACCS_DicisionTake' defined but not used
-../Application/Application_private.h:202: warning: 'ACCS_PID' declared 'static' but never defined
-../Application/Application_program.c:1377: warning: 'App_TimeOut_handle_DM_Time' defined but not used
+../Application/Application_program.c:198: warning: 'Hanndle_GrearBox_D_State' defined but not used
 Finished building: ../Application/Application_program.c
+ 
+Building file: ../main.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=1000000UL -MMD -MP -MF"main.d" -MT"main.o" -c -o "main.o" "../main.c"
+Finished building: ../main.c
  
 Building target: Car_system.elf
 Invoking: AVR C Linker
-avr-gcc -Wl,-Map,Car_system.map -mmcu=atmega16 -o "Car_system.elf"  ./MCAL/TIMER1/TIMER1_config.o ./MCAL/TIMER1/TIMER1_program.o  ./MCAL/TIMER0/TIMER0_config.o ./MCAL/TIMER0/TIMER0_program.o  ./MCAL/GPIO/GPIO_program.o  ./MCAL/EXT_INT/EXT_INT_program.o  ./MCAL/ADC/ADC_config.o ./MCAL/ADC/ADC_program.o  ./HAL/Potentiometer/POT_program.o  ./HAL/LED/LED_program.o  ./HAL/LCD/LCD_program.o  ./HAL/KEYPAD/Keypad_program.o  ./HAL/Buzzer/Buzzer_program.o  ./HAL/BUTTON/BUTTON_program.o  ./Application/Application_program.o  ./main.o   
+avr-gcc -Wl,-Map,Car_system.map -mmcu=atmega16 -o "Car_system.elf"  ./MCAL/USART/USART_config.o ./MCAL/USART/USART_program.o  ./MCAL/TIMER1/TIMER1_config.o ./MCAL/TIMER1/TIMER1_program.o  ./MCAL/TIMER0/TIMER0_config.o ./MCAL/TIMER0/TIMER0_program.o  ./MCAL/I2C/I2C_config.o ./MCAL/I2C/I2C_program.o  ./MCAL/GPIO/GPIO_program.o  ./MCAL/EXT_INT/EXT_INT_program.o  ./MCAL/ADC/ADC_config.o ./MCAL/ADC/ADC_program.o  ./HAL/ULTRASONIC/ULTRASONIC_program.o  ./HAL/Potentiometer/POT_program.o  ./HAL/LED/LED_program.o  ./HAL/LCD/LCD_program.o  ./HAL/KEYPAD/Keypad_program.o  ./HAL/EXT_EEPROM/EXT_EEPROM_program.o  ./HAL/DC_Motor/DC_Motor_program.o  ./HAL/Buzzer/Buzzer_program.o  ./HAL/Bluetooth/Bluetooth_program.o  ./HAL/BUTTON/BUTTON_program.o  ./Application/Application_program.o  ./main.o   
 Finished building target: Car_system.elf
  
 Invoking: AVR Create Extended Listing
@@ -52,15 +134,15 @@ AVR Memory Usage
 ----------------
 Device: atmega16
 
-Program:   20996 bytes (128.1% Full)
+Program:   32268 bytes (196.9% Full)
 (.text + .data + .bootloader)
 
-Data:        582 bytes (56.8% Full)
+Data:        730 bytes (71.3% Full)
 (.data + .bss + .noinit)
 
 
 Finished building: sizedummy
  
 
-15:15:55 Build Finished. 0 errors, 21 warnings. (took 1s.384ms)
+01:18:50 Build Finished. 0 errors, 29 warnings. (took 2s.568ms)
 
