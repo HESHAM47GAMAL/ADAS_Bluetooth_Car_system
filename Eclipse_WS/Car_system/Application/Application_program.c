@@ -17,6 +17,8 @@
 #include "Application_interface.h"
 #include "Application_private.h"
 #include "../SERVICE/IVT.h"
+#define F_CPU 8000000
+#include "util/delay.h"
 
 
 
@@ -31,6 +33,9 @@ extern uint8 LCD_False_ICON [] ;
 extern uint8 LCD_Mute_ICON [] ;
 extern uint8 LCD_Skull_ICON [] ;
 extern uint8 LCD_Alarm_ICON [] ;
+
+extern volatile uint8 UART_Counter ;
+extern uint8 UART_Buffer[DEFAULT_BUFFER_SIZE];
 
 /*  Locations that this custom characters Stored  */
 #define POS_LCD_Page_Not_Selected               LCD_CGRAM_LOCATION_1
@@ -57,10 +62,11 @@ enum DirivingMonetoring_State {DirivingMonetoring_Disable , DirivingMonetoring_E
 /*  🙆‍♂️Note I start with page 2  that has main parameter     */
 enum Page_State{Page_1_LCD , Page_2_LCD , Page_3_LCD  , Page_4_LCD};
 //                  BA          main        SL              date & time
+//                            DM  + KMC                 
 
-
-
+volatile static uint8 loaded_already_done = 0 ;
 volatile uint8 Temp_Speed ;
+
 sint16 Diff_between_ADCS ;
 /**************************                   Global variable                   **************************/
 
@@ -80,15 +86,18 @@ uint8 DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
 /*  Should be signed as If press brake in N mode will decrease -2 and if data type uint8 so when decrease will happen underflow and if value equal Zero at first so will be 254 so program will have bug*/
 static volatile sint16 Car_Speed = 0; /*  Global variable carry Speed of Car  */
 
+
 /*  carry state of Braking Button that updated by Interrupt and this variable take copy of last state of Braking Button  */
 static volatile uint8 Global_Braking_BTN_State = BTN_Released_State ;
+
+static volatile uint8 BrakeAssist_Braking = FALSE ;
 
 /*  This variable store intail value for speed Limiter*/
 static volatile uint8 Global_Speed_Limiter_value = 40 ; /*  Set intail value 40 as no limit speed under 40 KM/h*/
 
 
 
-volatile float32 distance_ACCS = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
+static volatile  uint8  Distance_for_dicision = 0 ;    /*  Global Variable carry distance between my car and car in front  of me and will take in consideration when GearBox_State == D && ACCS_state == ON   */
 
 /*  object declare for DC motor  */
 DC_Pin_Type DC_pins_Motor = {DC_RIR_1_PORT,DC_RIR_1_PIN,DC_RIR_2_PORT,DC_RIR_2_PIN };
@@ -136,6 +145,17 @@ uint16 Timer0_Overflow_counter_DM = 0 ;
 uint8 Buzzer_GiveSound =  NO_Condition  ;
 uint8 Buzzer_Timer0_OVF_count = 0 ;
 
+/*  This used by EXT0 to start main program*/
+uint8 Start_main_program = FALSE ;
+
+/*  order of memory will load and stored in External EEPROM */
+uint8 KiloMeter_Counter_EEPROM[8] ;
+uint8 GearBox_EEPROM ;
+uint8 SpeedLimiter_EEPROM ;
+uint8 page_EEPROM ;
+
+static uint8 EXT0_Count = 0 ;
+
 /*  👀👀 Function called inside While(1) Loop  */
 
 void App_StateMachineUpdate(void)
@@ -164,6 +184,13 @@ void App_StateMachineUpdate(void)
     /*  Update Kilko meters for Kilo metrers moved in Dashboard */  
     APP_CarMovedKiloMeters();
 
+    if( (BrakingAssist_Current_State == BrakingAssist_Enable) && (D_GearBox == GearBox_Current_State) )
+    {
+        ACCS_CatchDistance();
+        ACCS_DicisionTake();
+    }
+
+    Bluetooth_Buffer_Decision();
 }
 
 
@@ -190,9 +217,6 @@ static void Hanndle_GrearBox_N_State(void)
             CCS_Currnet_state = CCS_Disable;
             /*  Update LCD with new change*/
             DashBoard_Update_CCS_State(CCS_Currnet_state);
-            
-            //DashBoard_DistanceHide();
-           // DashBoard_DistanceHide_small();
 
         }
     }
@@ -224,6 +248,10 @@ static void Hanndle_GrearBox_R_State(void)
             /*  Update in LCD */
             DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
 
+            /*  👀👀Send update of Brake Assist to mobile app using bluetooth*/
+            //Bluetooth
+            Bluetooth_Send((const uint8 * )"*0");
+            _delay_ms(10);
         }
 
         /*  If it was Speed Limiter enabled should disabled and update in LCD*/
@@ -234,7 +262,14 @@ static void Hanndle_GrearBox_R_State(void)
             
             /*  Update LCD with new change*/
             DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+
+            /*  👀👀Send update of Speed limit to mobile app using bluetooth*/
+            //Bluetooth
+            Bluetooth_Send((const uint8 * )"&0");
+            _delay_ms(10);
         }
+
+        /*  No need to put Brake assist here as it will be disabled once press brake paddle */
 
     }
 }
@@ -269,6 +304,12 @@ void App_Init(void)
     /*  Set call back function  */
     INT1_SetCallBack(Braking_Button_Handling);
 
+    /*  Initialize Braking Button with EXT_INT 1    */
+    INT0_init(FALLING_EDGE_TRIGGER,INPUT_PIN);
+
+    /*  Set call back function  */
+    INT0_SetCallBack(Engine_Control_Handling);
+
     /*  Initialize LEDS(Red,Yellow) all os them connected positive logic */
 
     LED_Init(Red_LED_PORT,Red_LED_PIN);
@@ -296,13 +337,8 @@ void App_Init(void)
     /*  Enable Overflow Interrupt  */
     Timer0_Enable_OVR_Flow_Interrupt();
 
-    // /*  Initailize Timer 1*/
-    // Timer1_Init();
-
-    // /*  Set callback for finction that will hanle DM and Time */
-    // Timer1_SetCallBack(App_TimeOut_handle_DM_Time);
-
-    // Timer1_ProvideClock();
+    /*  Initailize Ultrasonic System and Time 1  with required configuration  */
+    Ultrasonic_Init();
 
     /*  Initialize ADC to be used by Potentiometer to accelerate  */
     ADC_Init();
@@ -313,27 +349,158 @@ void App_Init(void)
     /*  Initailize Keypad  */
     Keypad_init();
 
+    /*  Initialize I2C for EEPROM   */
+    I2C_Init();
+    _delay_ms(50);
+
+    /*  Initialize UART and Bluetooth */
+    Bluetooth_Init();
+
+    LCD_MoveCursor(1,5);
+    LCD_DisplayString((const uint8 * )"Start Engine");
+    /*  Display Message to start Engine */
+    while(Start_main_program == FALSE);
+
+    
+    
     /*  Intialize Bash Board for Car*/
     DashBoard_Init();
 }
+//Bluetooth
+void Bluetooth_Buffer_Decision(void)
+{
+    cli();
+    LCD_MoveCursor(3,0);
+    LCD_intToString(UART_Counter);
+    if(UART_Counter == 3)
+    {   /*  Debug only  */
+        LCD_DisplayString(UART_Buffer);
+        
+        sei();
+
+        /* This message related to GearBox */
+        if(UART_Buffer[0] == '!')
+        {
+            if(UART_Buffer[1] == '0')
+            {
+                GearBox_Current_State = N_GearBox;
+                /*  call function to update gearbox state in Dashboard*/
+                DashBoard_Update_GearBox_state(GearBox_Current_State);
+            }
+            else if(UART_Buffer[1] == '1')
+            {
+                GearBox_Current_State = D_GearBox;
+                /*  call function to update gearbox state in Dashboard*/
+                DashBoard_Update_GearBox_state(GearBox_Current_State);
+            }
+            else if(UART_Buffer[1] == '2')
+            {
+                GearBox_Current_State = R_GearBox;
+                /*  call function to update gearbox state in Dashboard*/
+                DashBoard_Update_GearBox_state(GearBox_Current_State);
+            }
+            
+                // sei();
+        }
+        /* This message related to Cruise Control system */
+        else if(UART_Buffer[0] == '$')
+        {
+            if(UART_Buffer[1] == '0')
+            {
+                CCS_Currnet_state = CCS_Disable;
+                DashBoard_Update_CCS_State(CCS_Currnet_state);
+            }
+            else if(UART_Buffer[1] == '1')
+            {
+                CCS_Currnet_state = CCS_Enable;
+                DashBoard_Update_CCS_State(CCS_Currnet_state);
+            }
+        }
+        /* This message related to Brake Assist system */
+        else if(UART_Buffer[0] == '%')
+        {
+            if(UART_Buffer[1] == '0')
+            {
+                BrakingAssist_Current_State = BrakingAssist_Disable ;
+                /*  call function update state of Brake assist*/
+                DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
+            }
+            else if(UART_Buffer[1] == '1')
+            {
+                BrakingAssist_Current_State = BrakingAssist_Enable ;
+                /*  call function update state of Brake assist*/
+                DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
+            }
+        }
+        /* This message related to Speed Limiter system */
+        else if(UART_Buffer[0] == '&')
+        {
+            if(UART_Buffer[1] == '0')
+            {
+                SpeedLimit_Current__State = SpeedLimit_Disable ;
+                /*  call function update state of Brake assist*/
+                DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+            }
+            else if(UART_Buffer[1] == '1')
+            {
+                SpeedLimit_Current__State = SpeedLimit_Enable ;
+                /*  call function update state of Brake assist*/
+                DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
+            }
+        }
+        /* This message related to Speed Limiter system */
+        else if(UART_Buffer[0] == '*')
+        {
+            if(UART_Buffer[1] == '0')
+            {
+                DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
+                /*  call function update state of Brake assist*/
+                DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
+            }
+            else if(UART_Buffer[1] == '1')
+            {
+                DrivingMonetoring_Current_State = DirivingMonetoring_Enable ;
+                /*  call function update state of Brake assist*/
+                DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
+            }
+        }
+
+        /*clear it to avoid any conflict */
+        UART_Counter = 0 ;
+
+    }
+}
+
 
 
 static void DashBoard_Init(void)
 {
     cli();
-    LCD_MoveCursor(0,0);
-    LCD_DisplayString((const uint8 * )"DM Status:");
-    /*  call function that will handle status for DM  */
-    DashBoard_DrivingMonetoring_Status_update();
+    LCD_ClearScreen();
+    DashBoard_SwitchPages();
+
+    // LCD_MoveCursor(0,0);
+    // LCD_DisplayString((const uint8 * )"DM Status:");
+    // /*  call function that will handle status for DM  */
+    // DashBoard_DrivingMonetoring_Status_update();
 
     /*  Display GearBox Current state  */
     LCD_MoveCursor(0,14);
-    LCD_DisplayString((const uint8 * )"GB : N");
+    LCD_DisplayString((const uint8 * )"GB : ");
+    LCD_MoveCursor(0,19);
+    if(GearBox_Current_State == N_GearBox)
+        LCD_DisplayCharacter('N');
+    else if(GearBox_Current_State == D_GearBox)
+        LCD_DisplayCharacter('D');
+    else if(GearBox_Current_State == R_GearBox)
+        LCD_DisplayCharacter('R');
+    else
+        LCD_DisplayCharacter('N'),GearBox_Current_State = N_GearBox;
 
-    /*  Display kilo meters counter value  */
-    LCD_MoveCursor(1,0);
-    LCD_DisplayString((const uint8 * )"KMC:"); 
-    LCD_FloatToString(Accumulative_Distance_KM);
+    // /*  Display kilo meters counter value  */
+    // LCD_MoveCursor(1,0);
+    // LCD_DisplayString((const uint8 * )"KMC:"); 
+    // LCD_FloatToString(Accumulative_Distance_KM);
 
     /*  Display speed */
     LCD_MoveCursor(1,11);
@@ -405,6 +572,27 @@ static void DashBoard_Update_BrakingAssist_State(uint8 BA_state)
     sei();
 }
 
+static void DashBoard_BrakingAssist_Status_update(void)
+{
+    cli();
+    LCD_MoveCursor(0,11);
+    if(BrakingAssist_Current_State == BrakingAssist_Enable)
+    {
+        if(Distance_BA_Current_status == Distance_BA_Meet)
+        {
+            LCD_DisplayCharacter(POS_LCD_Mute_ICON);
+        }
+        else
+        {
+            LCD_DisplayCharacter(POS_LCD_Alarm_ICON);
+        }
+    }
+    else
+    {
+        LCD_DisplayCharacter('D'); //system disabled
+    }
+    sei();
+}
 
 static void DashBoard_Update_SpeedLimiter_State(uint8 SL_state)
 {
@@ -494,6 +682,8 @@ static void DashBoard_SpeedLimit_status_update(void)
     // }
 }
 
+
+
 static void DahBoard_Update_DrivingMonetoring_State(uint8 DM_state)
 {
     cli();
@@ -569,6 +759,14 @@ static void DashBoard_SwitchPages(void)
     LCD_MoveCursor(0,0);
     LCD_DisplayString("              ");
     LCD_MoveCursor(1,0);
+    /*  Solve bug of system design that after some time should turn buzzer of but as I disable interrupt that timer 0 depend on it to turn buzzer off  */
+    /*  This probblem appear when press BA on/off during exisatnce in page 1*/
+    if(Buzzer_GiveSound == YES_Condition)
+    {
+        Buzzer_GiveSound = NO_Condition ;
+        Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
+        Buzzer_Timer0_OVF_count = 0;
+    }   
     LCD_DisplayString("           ");
     /*  Main window that I start with  */
     if(Page_Current_State == Page_2_LCD)
@@ -586,17 +784,19 @@ static void DashBoard_SwitchPages(void)
     }
     else if(Page_Current_State == Page_1_LCD)
     {
+        LCD_MoveCursor(0,0);
+        LCD_DisplayString("BA Status : ");
+        DashBoard_BrakingAssist_Status_update();
         if(BrakingAssist_Current_State == BrakingAssist_Enable)
         {
-            LCD_MoveCursor(0,0);
-            LCD_DisplayString("DIS : ");
             LCD_MoveCursor(1,0);
-            LCD_DisplayString("Status : ");
+            LCD_DisplayString("DIS:");
+            ACCS_CatchDistance();
         }
         else 
         {
-            LCD_MoveCursor(0,0);
-            LCD_DisplayString("Disabled");
+            LCD_MoveCursor(1,0);
+            LCD_DisplayString("          ");
         }
 
     }
@@ -647,27 +847,13 @@ static void APP_KeypadUpdate(void)
     static uint8 DrivingMonetoring_IsStillPressed = NO_Condition ;
 
     volatile sint8 local_currentValue_keypad = Keypad_GetPressedKey();/* Take last keypad pressed button */
-    /*  This if used to see only value of button pressed in Keypad  */
-    // if(local_currentValue_keypad >= 0 )
-    // {
-            
-    //     LCD_MoveCursor(3,0);
-    //     /*✍️LCD_SMALL_LARGE*/
-    //     //LCD_MoveCursor(1,0);
-    //     if(local_currentValue_keypad < 10)
-    //         LCD_DisplayCharacter((local_currentValue_keypad + '0'));
-    //     else 
-    //         LCD_DisplayCharacter(local_currentValue_keypad);
-    // }
-    // LCD_MoveCursor(3,2);
-    // LCD_intToString(Global_Speed_Limiter_value);
-    // LCD_DisplayCharacter(' ');
+
 
 
 /* (Button 1️⃣) Handle GearBox Button   */
 
     /*  👀👀👀👀👀👀GearBox switch only happen when press on gearbox and brake button in same time  */
-    if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) )
+    if( (local_currentValue_keypad == Keypad_GearBox_pressed_value) && (Global_Braking_BTN_State == BTN_Pressed_State) && (Car_Speed == 0))
     // if((local_currentValue_keypad == Keypad_GearBox_pressed_value))
     {
         /*  Make counter with zero to start count from zero for DM */
@@ -691,7 +877,18 @@ static void APP_KeypadUpdate(void)
                 GearBox_Current_State = N_GearBox ;
                 
             }
+            /*  👀👀Send current state of Gearbox to mobile app using bluetooth*/
+            //Bluetooth
+            cli();
+            if(GearBox_Current_State == N_GearBox)
+                Bluetooth_Send((const uint8 * )"!0");
+            else if(GearBox_Current_State == D_GearBox)
+                Bluetooth_Send((const uint8 * )"!1");
+            else if(GearBox_Current_State == R_GearBox)
+                Bluetooth_Send((const uint8 * )"!2");
 
+            _delay_ms(10);
+            sei();
             /*  call function to update gearbox state in Dashboard*/
             DashBoard_Update_GearBox_state(GearBox_Current_State);
 
@@ -744,7 +941,19 @@ static void APP_KeypadUpdate(void)
                     DashBoard_Update_CCS_State(CCS_Currnet_state);
 
                 }
-            }
+                
+                /*  👀👀Send current state of Cruise control state to mobile app using bluetooth*/
+                //Bluetooth
+                cli();
+                if(CCS_Currnet_state == CCS_Enable)
+                    Bluetooth_Send((const uint8 * )"$1");
+                else if(CCS_Currnet_state == CCS_Disable)
+                    Bluetooth_Send((const uint8 * )"$0");
+
+                _delay_ms(10);
+                sei();
+
+                }
             
         }
         else
@@ -787,6 +996,17 @@ static void APP_KeypadUpdate(void)
                     /*  stop sound of relay  as may be close this system and I also my speed higher than limit speed */
                     GPIO_WritePin(Relay_PORT,Relay_PIN,LOGIC_LOW);
                 }
+
+                /*  👀👀Send current state of Speed Limiter state to mobile app using bluetooth*/
+                //Bluetooth
+                cli();
+                if(SpeedLimit_Current__State == SpeedLimit_Enable)
+                    Bluetooth_Send((const uint8 * )"&1");
+                else if(SpeedLimit_Current__State == SpeedLimit_Enable)
+                    Bluetooth_Send((const uint8 * )"&0");
+
+                _delay_ms(10);
+                sei();
             }  
         }
         else
@@ -801,14 +1021,14 @@ static void APP_KeypadUpdate(void)
             // TimeOut_Counter = 0 ; //old one when I use timer1
             Timer0_Overflow_counter_DM = 0 ;
             
-            /*  Change state to update in LCD*/
-            DrivingMonetoring_Current_Status = DM_Meet ;
+            
 
             if(BrakingAssit_IsStillPressed == NO_Condition)
             {
-                BrakingAssit_IsStillPressed = YES_Condition ;
                 /* turn buzzer on and give timer 0 clock and set timeout    */
                 Buzzer_GiveSound = YES_Condition; 
+
+                BrakingAssit_IsStillPressed = YES_Condition ;
 
                 if(BrakingAssist_Current_State == BrakingAssist_Disable)
                 {
@@ -827,6 +1047,17 @@ static void APP_KeypadUpdate(void)
                 {
                     DashBoard_SwitchPages();    
                 }
+
+                /*  👀👀Send current state of Brake assist state to mobile app using bluetooth*/
+                //Bluetooth
+                cli();
+                if(BrakingAssist_Current_State == BrakingAssist_Enable)
+                    Bluetooth_Send((const uint8 * )"%1");
+                else if(BrakingAssist_Current_State == BrakingAssist_Disable)
+                    Bluetooth_Send((const uint8 * )"%0");
+
+                _delay_ms(10);
+                sei();
             }
         }
         else 
@@ -862,10 +1093,17 @@ static void APP_KeypadUpdate(void)
                     DrivingMonetoring_Current_State = DirivingMonetoring_Disable ;
                     /*  Update in LCD */
                     DahBoard_Update_DrivingMonetoring_State(DrivingMonetoring_Current_State);
-                    
-
                 } 
-                
+                /*  👀👀Send current state of Brake assist state to mobile app using bluetooth*/
+                //Bluetooth
+                cli();
+                if(DrivingMonetoring_Current_State == DirivingMonetoring_Enable)
+                    Bluetooth_Send((const uint8 * )"*1");
+                else if(DrivingMonetoring_Current_State == DirivingMonetoring_Disable)
+                    Bluetooth_Send((const uint8 * )"*0");
+
+                _delay_ms(10);
+                sei();
             }
         }
         else
@@ -1034,7 +1272,76 @@ static void APP_KeypadUpdate(void)
 
 
 
+static void Engine_Control_Handling(void)
+{
+    
+    EXT0_Count++ ;
+    if(EXT0_Count == 1)//Start Engine
+    {
+        Start_main_program = TRUE ;
 
+        uint8 loaded_already = 0;
+        uint8* ptr = (uint8*)&Accumulative_Distance_KM;
+        for (; loaded_already < sizeof(float64); loaded_already++) 
+        {
+            EEPROM_readByte(EEPROM_LOCATION + loaded_already , (ptr+loaded_already));
+            _delay_ms(50);
+        }
+        EEPROM_readByte(EEPROM_LOCATION +loaded_already, &GearBox_Current_State);
+        loaded_already++;
+        _delay_ms(50);
+        EEPROM_readByte(EEPROM_LOCATION +loaded_already, &Global_Speed_Limiter_value);
+        loaded_already++;
+        _delay_ms(50);
+        EEPROM_readByte(EEPROM_LOCATION +loaded_already, &Page_Current_State);
+        _delay_ms(50);
+
+        /*  Send data to Mobile App using Bluetooth   */
+        if(GearBox_Current_State == N_GearBox)
+            Bluetooth_Send((const uint8 * )"0");
+        else if(GearBox_Current_State == D_GearBox)
+            Bluetooth_Send((const uint8 * )"1");
+        else if(GearBox_Current_State == R_GearBox)
+            Bluetooth_Send((const uint8 * )"2");
+    }
+    else if(EXT0_Count == 2)//close engine
+    {
+        /*  Store data in External EEPROM   */
+        uint8 loaded_already = 0;
+        uint8* ptr = (uint8*)&Accumulative_Distance_KM;
+        for (; loaded_already < sizeof(float64); loaded_already++) 
+        {
+            
+            EEPROM_writeByte(EEPROM_LOCATION + loaded_already , ptr[loaded_already]);
+            _delay_ms(50);
+        }
+        EEPROM_writeByte(EEPROM_LOCATION +loaded_already, GearBox_Current_State);
+        /*  Delay is mandatory to work*/
+        loaded_already++;
+        _delay_ms(50);
+        EEPROM_writeByte(EEPROM_LOCATION +loaded_already, Global_Speed_Limiter_value);
+        loaded_already++;
+        _delay_ms(50);
+        EEPROM_writeByte(EEPROM_LOCATION +loaded_already, Page_Current_State);
+        cli();
+        /*  Engine of car will be off so stop every thing  */
+        LCD_ClearScreen();
+        LCD_MoveCursor(1,5);
+        LCD_DisplayString("Engine OFF");
+        /*  Stop motor*/
+        DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
+        /*  turn of relay if opened*/
+        GPIO_WritePin(Relay_PORT,Relay_PIN,LOGIC_LOW);
+        /*  turn off red led & yellow*/
+        LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+        LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+        /*  Send to mobile app that engine is power off  */
+        Bluetooth_Send((const uint8 * )"@");
+        _delay_ms(10);
+
+        while(1);
+    }
+}
 
 
 
@@ -1107,6 +1414,12 @@ void tessst (void)
 
                 /*  Update LCD with new change*/
                 DashBoard_Update_CCS_State(CCS_Currnet_state);
+
+                /*  👀👀Send update of Cruise contol to mobile app using bluetooth*/
+                //Bluetooth
+                Bluetooth_Send((const uint8 * )"$0");
+                _delay_ms(10);
+                
             }
 
             /*  If it was Braking Assist enabled should disabled and update in LCD*/
@@ -1117,20 +1430,16 @@ void tessst (void)
 
                 /*  Update LCD with new change*/
                 DashBoard_Update_BrakingAssist_State(BrakingAssist_Current_State);
+                /*  Called As user if currently in page 1 that carry information about brake system should be handled   */
+                DashBoard_SwitchPages();
+
+                /*  👀👀Send update of Brake Assist to mobile app using bluetooth*/
+                //Bluetooth
+                Bluetooth_Send((const uint8 * )"%0");
+                _delay_ms(10);
             }
 
-            // /*  If it was Speed Limiter enabled should disabled and update in LCD*/
-            // if(SpeedLimit_Current__State == SpeedLimit_Enable)
-            // {
-            //     /*  Disable BA Sysystem */
-            //     SpeedLimit_Current__State = SpeedLimit_Disable ;
-                
-            //     /*  Update LCD with new change*/
-            //     DashBoard_Update_SpeedLimiter_State(SpeedLimit_Current__State);
-            // }
 
-            // DashBoard_DistanceHide();
-            //DashBoard_DistanceHide_small();
 
 
             /*  Make counter with zero to start count from zero for DM */
@@ -1158,6 +1467,11 @@ void Braking_LongPressHandle(void)
 
             /*  Update LCD with new change*/
             DashBoard_Update_CCS_State(CCS_Currnet_state);
+
+            /*  👀👀Send update of Cruise contol to mobile app using bluetooth*/
+            //Bluetooth
+                Bluetooth_Send((const uint8 * )"$0");
+                _delay_ms(10);
         }
 
         /*  ⚠️Here when press on brakeing pedal will detected as A press and if DM activated and after 5 second make alarm for no action from driver 
@@ -1180,7 +1494,7 @@ static void DashBoard_updateTime(void)
     if(Page_Current_State == Page_4_LCD)
     {
         LCD_MoveCursor(1,0);
-        LCD_DisplayString("T=");if(Clock_hour < 10)
+        LCD_DisplayString((const uint8 * )"T=");if(Clock_hour < 10)
         {
             LCD_DisplayCharacter(' ');
             LCD_intToString(Clock_hour);
@@ -1223,18 +1537,34 @@ static void ACCS_CatchDistance(void)
     * so this lead to make data overwrite in LCD 
     * "this is one scenario from a lot of scenarios "
     */
+
+    /*  It should be outside critical section as this function depend on  interrupt */
+    float64 Value_of_Dis = Ultrasonic_Distance();
+    Distance_for_dicision = (uint8) Value_of_Dis ;
     cli();
-    volatile uint16 Adc_value_pure = ADC_ReadChannelSingleConvertion(ADC_Channel_0);
-    distance_ACCS = (Adc_value_pure * 10) / 1023.0 ; 
-    /*  Here trying to get first number after Sign  */
-    volatile uint8 distance_after_point = ( (uint8)(distance_ACCS * 10) )  % 10;
-    LCD_MoveCursor(3,11);
-    /*  For Small LCD*/
-    //LCD_MoveCursor(1,11);
-	LCD_intToString((uint8)distance_ACCS);
-	LCD_DisplayCharacter('.');
-    LCD_intToString(distance_after_point);
-    LCD_DisplayString("M ");
+    if(Page_Current_State == Page_1_LCD)
+    {
+        LCD_MoveCursor(1,4);
+        if(Value_of_Dis > 20)
+        {
+            LCD_DisplayCharacter('>');
+            Value_of_Dis = 20 ;
+        }
+        uint8 Character_displayed = LCD_FloatToString(Value_of_Dis);
+
+        LCD_DisplayString((const uint8 * )"M");
+        if(Character_displayed == 5)
+            LCD_DisplayString((const uint8 * )" ");
+        else if(Character_displayed == 4)
+            LCD_DisplayString((const uint8 * )"  ");
+        else if(Character_displayed == 3)
+            LCD_DisplayString((const uint8 * )"   ");
+        else if(Character_displayed == 2)
+            LCD_DisplayString((const uint8 * )"    ");
+        else if(Character_displayed == 1)
+            LCD_DisplayString((const uint8 * )"     ");
+    }
+
     sei();
 }
 
@@ -1242,31 +1572,38 @@ static void ACCS_CatchDistance(void)
 
 static void ACCS_DicisionTake(void)
 {
-    if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
+   
+    cli();
+    if(Car_Speed > 20)
     {
-
-        cli();
-        if((uint8)(distance_ACCS) >= 8) /*  Case 1  */
+        if(Distance_for_dicision >= 9) /*  Case 1  */
         {
             
             /*  Do no thing */
             LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
             LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
 
-           
+            BrakeAssist_Braking = FALSE;
+
+            /*  Update status of this feature ion dashboard */
+            Distance_BA_Current_status = Distance_BA_Meet;
+            DashBoard_BrakingAssist_Status_update();
+            
         }
-        else if(((uint8)(distance_ACCS) >= 6)) /*  Case 2  */
+        else if(Distance_for_dicision >= 7)/*  Case 2  */
         {
-           
+            
             /*  in this case only turn yellow led only */
             LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_ON);
             LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
 
-          
+            BrakeAssist_Braking = FALSE ;
 
-            /*  Try to return back to speed that was make fixed*/
+            /*  Update status of this feature ion dashboard */
+            Distance_BA_Current_status = Distance_BA_Meet;
+            DashBoard_BrakingAssist_Status_update();
         }
-        else if (((uint8)(distance_ACCS) >= 4)) /*  Case 3  */
+        else if (Distance_for_dicision >= 5) /*  Case 3  */
         {
             
 
@@ -1275,8 +1612,15 @@ static void ACCS_DicisionTake(void)
 
             LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_ON);
 
+            /*  turn off acceleration*/
+            BrakeAssist_Braking = TRUE;
+            
+            /*  Update status of this feature ion dashboard */
+            Distance_BA_Current_status = Distance_BA_Failed;
+            DashBoard_BrakingAssist_Status_update();
+
         }
-        else if (((uint8)(distance_ACCS) >= 2)) /*  Case 4  */
+        else if (Distance_for_dicision >= 3) /*  Case 4  */
         {
 
 
@@ -1285,8 +1629,15 @@ static void ACCS_DicisionTake(void)
 
             LED_Toggle(Red_LED_PORT,Red_LED_PIN);
 
+            /*  turn off acceleration*/
+            BrakeAssist_Braking =TRUE;
+
+            /*  Update status of this feature ion dashboard */
+            Distance_BA_Current_status = Distance_BA_Failed;
+            DashBoard_BrakingAssist_Status_update();
+
         }   
-        else if (((uint8)(distance_ACCS) >= 0)) /*  Case 5  */
+        else if (Distance_for_dicision >= 0)/*  Case 5  */
         {
             /*  Turn Of all leds    */
             LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
@@ -1300,12 +1651,25 @@ static void ACCS_DicisionTake(void)
 
             /*  flash Relay  */
 
-            /*  Disable all Button*/
-            while(1);
+            /*  Disable every thing*/
+            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
+            LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
+            LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
+            while(1)
+            {
+                GPIO_TogglePin(Relay_PORT,Relay_PIN);
+                _delay_ms(1000);
+            }
         }
-        
-        sei();
     }
+    
+    else 
+    {
+        /*  No car lead to death with car speed low than 20km/h*/
+        BrakeAssist_Braking = FALSE;
+    }
+    sei();
+
 }
 
 static void App_CarSpeedUpdate(void)
@@ -1316,46 +1680,114 @@ static void App_CarSpeedUpdate(void)
     /*  Get speed that be assigned depend on next condition state  */ 
     Temp_Speed = (uint8)( ( (200) * ((uint32) Adc_value_pure)  ) / 1023 ) ;
 
+    static volatile uint8 ADC_Value_change_accepted  ;
     Diff_between_ADCS =  (sint16)Prev_Adc_value_pure - (sint16)Adc_value_pure;
 
-    if((Diff_between_ADCS > 19) || (Diff_between_ADCS < -19)) // by try found that potentiometer in real life its value vary with max change = 15 so I want change greater than 25 in CCR or CR to accept it as human change not noise in potentiometer
+    /*  Here change speed of car by decrease its value when press braking   */
+    if((Global_Braking_BTN_State == BTN_Pressed_State) || (BrakeAssist_Braking == TRUE))
     {
-        Car_Speed = Temp_Speed ;
-        Timer0_Overflow_counter_DM =0 ; // when there are new change in potentiometer (accelemetor) reset time counter for Driving monetering 
-        
-        /*  Change state to update in LCD*/
-        DrivingMonetoring_Current_Status = DM_Meet ;
-
-        if((CCS_Currnet_state == CCS_Enable) && (GearBox_Current_State == D_GearBox))
+        Car_Speed -= 6 ;   
+        if(Car_Speed < 0)
         {
-            /*  As in requirement Cruise control will be Disabled when press in accelerator pedal if I in "D" Gearbox  and CCS was activated */
-            CCS_Currnet_state = CCS_Disable ;
-            DashBoard_Update_CCS_State(CCS_Currnet_state);
+            Car_Speed = 0; 
         }
     }
-        cli();
-        LCD_MoveCursor(1,14);
-        /*  call function to handle speed for motor */
-        LCD_intToString((uint8)Car_Speed) ;
-        LCD_DisplayString("KM ");
+    else /* here Brake not pressed so will do one of 2 things*/
+    /*
+        1.return to  speed of potentiometer that not chaned but braking make ignore to it
+        2.update speed due to change in potentiometer value
+    */
+    {
+        if((Diff_between_ADCS > 19) || (Diff_between_ADCS < -19)) // by try found that potentiometer in real life its value vary with max change = 15 so I want change greater than 25 in CCR or CR to accept it as human change not noise in potentiometer
+        {
+            ADC_Value_change_accepted =  Temp_Speed ;
+            /*  Solve problem of limit resource represented in potentiometer    */
+            if(ADC_Value_change_accepted < 6)
+                ADC_Value_change_accepted = 0;
+            Timer0_Overflow_counter_DM =0 ; // when there are new change in potentiometer (accelemetor) reset time counter for Driving monetering 
+            
+            /*  Change state to update in LCD*/
+            DrivingMonetoring_Current_Status = DM_Meet ;
 
-        /*  Update Dc motor speed  */
-        if(GearBox_Current_State == N_GearBox)
-        {
-            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
+            if((CCS_Currnet_state == CCS_Enable) && (GearBox_Current_State == D_GearBox))
+            {
+                /*  As in requirement Cruise control will be Disabled when press in accelerator pedal if I in "D" Gearbox  and CCS was activated */
+                CCS_Currnet_state = CCS_Disable ;
+                DashBoard_Update_CCS_State(CCS_Currnet_state);
+
+                /*  👀👀Send update of Cruise contol to mobile app using bluetooth*/
+                //Bluetooth
+                Bluetooth_Send((const uint8 * )"$0");
+                _delay_ms(10);
+            }
         }
-        else if(GearBox_Current_State == D_GearBox)
+        if(ADC_Value_change_accepted > Car_Speed)
         {
-            uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
-            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_CW,(uint8)Speed_0_100);
+            if(ADC_Value_change_accepted - Car_Speed > 100)
+            {
+                Car_Speed += 14;
+            }
+            else if (ADC_Value_change_accepted - Car_Speed > 50)
+            {
+                Car_Speed += 8;
+            }
+            else 
+            {
+                Car_Speed += 6;
+            }
+            
+            if(ADC_Value_change_accepted <= Car_Speed)
+            {
+                Car_Speed = ADC_Value_change_accepted ;
+            }
         }
-        else if(GearBox_Current_State == R_GearBox)
+        else if(ADC_Value_change_accepted < Car_Speed)
         {
-            uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
-            DC_Motor_Speed(&DC_pins_Motor,DC_Motor_ACW,(uint8)Speed_0_100);
+            if(Car_Speed - ADC_Value_change_accepted  > 100)
+            {
+                Car_Speed -= 14;
+            }
+            else if (Car_Speed - ADC_Value_change_accepted   > 50)
+            {
+                Car_Speed -= 8;
+            }
+            else 
+            {
+                Car_Speed -= 6;
+            }
+
+            if(ADC_Value_change_accepted >= Car_Speed)
+            {
+                Car_Speed = ADC_Value_change_accepted ;
+            }
         }
+    }
+    
+    cli();
+    LCD_MoveCursor(1,14);
+    /*  call function to handle speed for motor */
+    LCD_intToString((uint8)Car_Speed) ;
+    LCD_DisplayString((const uint8 * )"KM ");
+
+    /*  Update DC motor speed  */
+    if(GearBox_Current_State == N_GearBox)
+    {
+        DC_Motor_Speed(&DC_pins_Motor,DC_Motor_Stop,0);
+    }
+    else if(GearBox_Current_State == D_GearBox)
+    {
         
-        sei();
+        uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
+        DC_Motor_Speed(&DC_pins_Motor,DC_Motor_CW,(uint8)Speed_0_100);
+        
+    }
+    else if(GearBox_Current_State == R_GearBox)
+    {
+        uint8 Speed_0_100 = (Car_Speed * (uint16) 100) / 200 ;
+        DC_Motor_Speed(&DC_pins_Motor,DC_Motor_ACW,(uint8)Speed_0_100);
+    }
+    
+    sei();
     /*  Save last change in Speed variable that will display in LCD  */
     Prev_Adc_value_pure = Adc_value_pure ;
 
@@ -1367,7 +1799,7 @@ static void App_CarSpeedUpdate(void)
 static void TImer0_OVF_Handling_Fun(void)
 {
     /*  Here handle */
-    if( (GearBox_Current_State == D_GearBox) || (GearBox_Current_State == R_GearBox) )
+    // if( (GearBox_Current_State == D_GearBox) || (GearBox_Current_State == R_GearBox) )
     
     
     Timer0_Overflow_counter_DM++; 
@@ -1393,6 +1825,7 @@ static void TImer0_OVF_Handling_Fun(void)
         {
             Buzzer_GiveSound = NO_Condition ;
             Buzzer_OnOffPositiveLogic(Buzzer_PORT,Buzzer_PIN,Buzzer_OFF);
+            Buzzer_Timer0_OVF_count = 0;
         }
     }
     else if(Buzzer_GiveSound == NO_Condition)
@@ -1451,138 +1884,4 @@ static void APP_CarMovedKiloMeters(void)
     }
 }
 
-
-/******************************************************************************/
-
-
-
-
-
-// static void DashBoard_DistanceShow_small(void)
-// {
-//     LCD_MoveCursor(1,8);
-//     LCD_DisplayString((const uint8 * )",D:");
- 
-// }
-
-// static void DashBoard_DistanceHide_small(void)
-// {
-//     LCD_MoveCursor(1,8);
-//     LCD_DisplayString((const uint8 * )"        ");
-// }
-
-
-
-
-// static void DashBoard_DistanceShow(void)
-// {
-//     LCD_MoveCursor(3,0);
-//     LCD_DisplayString((const uint8 * )"Distance : ");
-// }
-
-
-// static void DashBoard_DistanceHide(void)
-// {
-//     LCD_MoveCursor(3,0);
-//     LCD_DisplayString((const uint8 * )"                    ");
-// }
-
-
-
-// static void Buttons_Update(void)
-// {   
-
-//     /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
-//     static uint8 GearBox_IsStillPressed = NO_Condition;
-//     /*  Take current state for button  to check if still pressed*/
-//     uint8 GearBox_BTN_State = BUTTON_GetValue(GearBox_BTN_PORT,GearBox_BTN_PIN);
-    
-//     if(GearBox_BTN_State == BTN_Pressed_State)
-//     {
-//         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
-//         if(GearBox_IsStillPressed == NO_Condition)
-//         {
-//             /* turn buzzer on and give timer 0 clock and set timeout    */
-//             Buzzer_NotifySound();
-
-//             GearBox_IsStillPressed = YES_Condition ;
-//             /*  Go to next state for gearbox*/
-//             GearBox_Current_State ++ ;
-//             if(GearBox_Current_State == GearBox_Return_to_N  )
-//             {
-//                 GearBox_Current_State = N_GearBox ;
-                
-//             }
-
-//             /*  call function to update gearbox state in Dashboard*/
-//             DashBoard_Update_GearBox_state(GearBox_Current_State);
-//             /*  Initailize for small LCD*/
-//             //DashBoard_Update_GearBox_state_small(GearBox_Current_State);
-//         }
-        
-//     }
-//     else
-//     {
-//         /*  Enter this state when Button released*/
-//         GearBox_IsStillPressed = NO_Condition ;
-//     }
-  
-
-    // if(GearBox_Current_State == D_GearBox)
-    // {
-    //     /*  This variable used to carry if button is still pressed after last pressed as any action taken once with first step and if still press nothing happen    */
-    //     static uint8 ACCS_IsStillPressed = NO_Condition;
-    //     /*  Take current state for button  to check if still pressed*/
-    //     uint8 ACCS_BTN_State = BUTTON_GetValue(ACCS_BTN_PORT,ACCS_BTN_PIN);
-        
-    //     if(ACCS_BTN_State == BTN_Pressed_State)
-    //     {
-    //         /*  This condition placed here to take action for button press only when pressed and if still pressed Do nothing    */
-    //         if(ACCS_IsStillPressed == NO_Condition)
-    //         {
-    //             /* turn buzzer on and give timer 0 clock and set timeout    */
-    //             Buzzer_NotifySound();
-
-    //             ACCS_IsStillPressed = YES_Condition ;
-                
-    //             if(ACCS_Currnet_state == ACCS_Disable ) 
-    //             {
-                    
-    //                 /*  Update ACCS state with new value (Enabled)*/
-    //                 ACCS_Currnet_state = ACCS_Enable;
-    //                 DashBoard_Update_CCS_State(ACCS_Currnet_state);
-    //                 /*  Initailize for small LCD*/
-    //                 //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
-    //                 DashBoard_DistanceShow();
-    //                 //DashBoard_DistanceShow_small();
-    //             }
-    //             else
-    //             {
-    //                 ACCS_Currnet_state = ACCS_Disable;
-
-    //                 /*  Turn off led that work in Adaptive cruise control  as may be  in not safe area and  turn off Adaptive cruise control   */
-    //                 //LED_OnOffPositiveLogic(Yellow_LED_PORT,Yellow_LED_PIN,LED_OFF);
-    //                 /*  🚩🚩🚩🚩🚩🚩🙆‍♂️🙆‍♂️🙆‍♂️ i think that I need to put diable and enable to interrupt as I may be ACCS enabled and when I disable and press braiking at same time */
-    //                 //LED_OnOffPositiveLogic(Red_LED_PORT,Red_LED_PIN,LED_OFF);
-
-    //                 DashBoard_Update_CCS_State(ACCS_Currnet_state);
-    //                 /*  Initailize for small LCD*/
-    //                 //DashBoard_Update_CCS_State_small(ACCS_Currnet_state);
-
-                    
-    //                 DashBoard_DistanceHide();
-    //                 //DashBoard_DistanceHide_small();
-    //             }
-
- 
-    //         }
-    //     }
-    //     else
-    //     {
-    //         /*  Enter this state when Button released*/
-    //         ACCS_IsStillPressed = NO_Condition ;
-    //     }
-    // }
-
-// }
 

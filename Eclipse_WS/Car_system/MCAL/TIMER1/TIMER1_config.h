@@ -81,7 +81,7 @@ typedef enum
 #define    T1_TIME_DELAY            0 //  Option 1 -----------|
 #define    T1_ICU                   1 //  Option 2 -----------|
 //                                                            | Here   
-#define NORMAL_use_T1_state         T1_TIME_DELAY   //<-------|
+#define NORMAL_use_T1_state         T1_ICU   //<-------|
 
 #if (NORMAL_use_T1_state  == T1_ICU)
     typedef enum{

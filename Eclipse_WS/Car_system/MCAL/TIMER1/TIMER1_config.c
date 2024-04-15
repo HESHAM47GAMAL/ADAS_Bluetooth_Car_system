@@ -20,7 +20,7 @@
 #if(TIMER1_CURRENT_MODE == T1_NORMAL_MODE)
 
     TIMER1_ConfigType TIMER1_ConfigTypeParam = {
-        F_CPU_1024_T1    ,    /*    Choose Prescaler   */
+        F_CPU_8_T1    ,    /*    Choose Prescaler   */
     };
     
 #elif(TIMER1_CURRENT_MODE == T1_CTC_MODE )

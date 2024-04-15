@@ -39,7 +39,9 @@
 
 #define Timer0_OVF_1_sec_RTClock                    8
 #define Timer0_OVF_5_sec_DrivingMonetoring          85
-#define Timer0_OVF_Buzzer_Notify_sound              3
+#define Timer0_OVF_Buzzer_Notify_sound              4
+
+#define EEPROM_LOCATION    0x10
 
 
 /**************************                   Function Prototype                   **************************/
@@ -121,12 +123,15 @@ static void Hanndle_GrearBox_D_State(void);
  static void DashBoard_Update_BrakingAssist_State(uint8 BA_state);
 
 
+
+static void DashBoard_BrakingAssist_Status_update(void);
+
  static void DashBoardPageFooter_update(void);
 
 
 static void DashBoard_SwitchPages(void);
 
-static void GetDiffCarSpeed_and_limit(void);
+
 
 
 
@@ -137,12 +142,7 @@ static void DashBoard_DrivingMonetoring_Status_update(void);
 
 static void DashBoard_DrivingMonetoring_continous_Status_update(void);
 
-
-
 static void DashBoard_updateTime(void);
-
-
-
 
 
 
@@ -154,6 +154,8 @@ static void DashBoard_updateTime(void);
 *   @ Reentrant / Non Reentrant : Reentrant
 */
 static void Braking_Button_Handling(void);
+
+static void Engine_Control_Handling(void);
 
 /*  This only function used with brake ISR that to make push to it in stack and when same ISR happen make context switch and return to function */
 /*  Try to Ask Eng Mohamed Helmy    */
@@ -180,15 +182,14 @@ static void ACCS_DicisionTake(void);
 
 
 
-static void ACCS_PID(uint8 braking_value);
-
-
 static void APP_KeypadUpdate(void);
 
 
 
 static void App_CarSpeedUpdate(void);
 
+
+static void GetDiffCarSpeed_and_limit(void);
 
 
 
@@ -205,41 +206,4 @@ static void TImer0_OVF_Handling_Fun(void);
 static void APP_CarMovedKiloMeters(void);
 
 
-/**************************************  For Small LCD ***********************/
-    // static void DashBoard_Init_small(void);
-    // static void DashBoard_Update_GearBox_state_small(uint8 GearBox_state);
-    // static void DashBoard_DistanceShow_small(void);
-    // static void DashBoard_DistanceHide_small(void);
-    // static void DashBoard_UpdateSpeed(void);
-    // static void APP_DashBoardPage_update_small(void);
-
-// /*
-// *   @brief : this function used to Show only "Distance : " in LCD
-// *   @args  void
-// *   @return: no return
-// *   @synchronous / Asynchronous : Synchronous
-// *   @ Reentrant / Non Reentrant : Reentrant
-// */
-//  static void DashBoard_DistanceShow(void); 
-
-
-// /*
-// *   @brief : this function used to hide all data in last row by display white space "                  "
-// *   @args  void
-// *   @return: no return
-// *   @synchronous / Asynchronous : Synchronous
-// *   @ Reentrant / Non Reentrant : Reentrant
-// */
-//  static void DashBoard_DistanceHide(void);
-
-
-
-
-// /*
-// *   @brief : this function used to get update of Buttons 
-// *   @args  void
-// *   @return: no return
-// *   @synchronous / Asynchronous : Synchronous
-// *   @ Reentrant / Non Reentrant : Reentrant
-// */
-// static void Buttons_Update(void);
+void Bluetooth_Buffer_Decision(void);

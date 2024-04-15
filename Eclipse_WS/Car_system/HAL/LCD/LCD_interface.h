@@ -92,7 +92,7 @@ void LCD_DisplayStringRowCol(const uint8 * str_content , uint8 row , uint8 col);
 void LCD_intToString(uint32 data);
 
 
-void LCD_FloatToString(float64 num);
+uint8 LCD_FloatToString(float64 num);
 
 /*
 *   @brief : this function used to clear all character and return to row = 0 and col =0

@@ -24,11 +24,17 @@
 #include "../HAL/Potentiometer/POT_interface.h"
 #include "../HAL/KEYPAD/Keypad_interface.h"
 #include "../HAL/DC_Motor/DC_Motor_interface.h"
+#include "../HAL/ULTRASONIC/ULTRASONIC_interface.h"
+#include "../HAL/EXT_EEPROM/EXT_EEPROM_interface.h"
+#include "../HAL/Bluetooth/Bluetooth_interface.h"
+
 
 #include "../MCAL/EXT_INT/EXT_INT_interface.h"
 #include "../MCAL/TIMER0/TIMER0_interface.h"
 #include "../MCAL/ADC/ADC_interface.h"
 #include "../MCAL/TIMER1/TIMER1_interface.h"
+#include "../MCAL/I2C/I2C_interface.h"
+#include "../MCAL/USART/USART_interface.h"
 
 
 /**************************                   Definitions                   **************************/

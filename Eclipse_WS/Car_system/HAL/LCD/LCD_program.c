@@ -439,8 +439,10 @@ void LCD_intToString(uint32 data)
     LCD_DisplayString( (uint8_t *)string_buff);
 }
 
-void LCD_FloatToString(float64 num)
+uint8 LCD_FloatToString(float64 num)
 {
+    uint8 charcter_Counter = 0 ;
+
     uint8 str[8];
     
     int wholePart = (int)num;
@@ -454,6 +456,7 @@ void LCD_FloatToString(float64 num)
         int rem = wholePart % 10;
         str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
         wholePart = wholePart/10;
+        charcter_Counter++;
     }
 
     // Reverse the string
@@ -469,6 +472,7 @@ void LCD_FloatToString(float64 num)
 
     // Add decimal point
     str[i] = '.';
+    charcter_Counter++;
 
     // Convert fractional part to string
     fractionalPart = fractionalPart * 100;  // for 2 decimal places
@@ -480,6 +484,7 @@ void LCD_FloatToString(float64 num)
         int rem = fractionalPartInt % 10;
         str[j++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
         fractionalPartInt = fractionalPartInt/10;
+        charcter_Counter++;
     }
     str[j] = '\0';  // end of string
     LCD_DisplayString( (uint8_t *)str);
@@ -487,4 +492,6 @@ void LCD_FloatToString(float64 num)
     {
         LCD_DisplayString( (uint8_t *)" ");
     }
+
+    return charcter_Counter;
 }
