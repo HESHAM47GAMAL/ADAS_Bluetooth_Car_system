@@ -90,12 +90,12 @@
 [I attach video for youtube link to see full demo video with high quality](https://youtu.be/ZXOVi9rrE6M?si=tgcz_JfilfFe-T7X)
 
 ## Yotube
-<p>I will Discuss some main points and know concepts 
-1.System Engineer (what do and requirement Acquisition and make analysis )
-2.follow Agile model and follow sprints  
-2.Block diagram design  (discuss it)
-3.How use Bluetooth in simulation 
-4.Quick talk about app inventor design 
-5.communication used in Bluetooth to synchronize between mobile application and hardware connection </p>
+<p>I will Discuss some main points and know concepts </p>
+<p>1.System Engineer (what do and requirement Acquisition and make analysis )</p>
+<p>2.follow Agile model and follow sprints  </p>
+<p>2.Block diagram design  (discuss it)</p>
+<p>3.How use Bluetooth in simulation </p>
+<p>4.Quick talk about app inventor design </p>
+<p>5.communication used in Bluetooth to synchronize between mobile application and hardware connection </p>
 
 [watch this](https://youtu.be/JfsTqGEMFk8?si=Aj15wjmO7tpInTAH)
