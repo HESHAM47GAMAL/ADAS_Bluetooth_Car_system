@@ -3,6 +3,8 @@
 - [Requirement-acquisition](#Requirement-acquisition)
 - [Schematic](#Schematic)
 - [Block-Diagram](#Block-Diagram)
+- [Car_Dashboard](#Car_Dashboard)
+- [Mobile-Application](#Mobile-Application)
 - [Tools](#Tools)
 - [Demo](#Demo)
 - [Yotube](#Yotube)
@@ -34,10 +36,22 @@
 <p>Requirement acquisition 2.pdf</p>
 <p>Requirement acquisition 3.pdf</p>
 
+## Schematic
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/Proteus_schematic.png">
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/RealLife_schematic.jpg">
+
+
 ## Block-Diagram
 
 <img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/BlockDiagram_image.png">
 
 
-
-
+## Car_Dashboard
+<p>Page 1 information</p>
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/Dashboard_pages_screenshots/DashBoard_page1.jpg">
+<p>Page 2 information</p>
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/Dashboard_pages_screenshots/DashBoard_page2.jpg">
+<p>Page 3 information</p>
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/Dashboard_pages_screenshots/DashBoard_page3.jpg">
+<p>Page 4 information</p>
+<img src= "https://github.com/HESHAM47GAMAL/ADAS_Bluetooth_Car_system/blob/main/Dashboard_pages_screenshots/DashBoard_page4.jpg">
