@@ -186,8 +186,8 @@ void App_StateMachineUpdate(void)
 
     if( (BrakingAssist_Current_State == BrakingAssist_Enable) && (D_GearBox == GearBox_Current_State) )
     {
-        ACCS_CatchDistance();
-        ACCS_DicisionTake();
+        Radar_CatchDistance();
+        BrakeAssist_DicisionTake();
     }
 
     Bluetooth_Buffer_Decision();
@@ -198,9 +198,9 @@ static void Hanndle_GrearBox_D_State(void)
 {
     if((CCS_Currnet_state == CCS_Enable) && (D_GearBox == GearBox_Current_State))
     {
-       // ACCS_CatchDistance();
+       // Radar_CatchDistance();
         /*  may be interrupt happen here so inside next function check if brake button pressed and make disable for ACCS    */
-       // ACCS_DicisionTake();
+       // BrakeAssist_DicisionTake();
         
     }
 }
@@ -799,7 +799,7 @@ static void DashBoard_SwitchPages(void)
         {
             LCD_MoveCursor(1,0);
             LCD_DisplayString("DIS:");
-            ACCS_CatchDistance();
+            Radar_CatchDistance();
         }
         else 
         {
@@ -1537,7 +1537,7 @@ static void DashBoard_updateTime(void)
     sei();
 }
 
-static void ACCS_CatchDistance(void)
+static void Radar_CatchDistance(void)
 {
     /*  ⚠️🙆‍♂️🚩Here I need to disable interrupt as I don't know when I press braking button 
     * as may be before printing point(.) and number after point  press braking button and this lead to call DashBoard_DistanceHide() function
@@ -1578,7 +1578,7 @@ static void ACCS_CatchDistance(void)
 
 
 
-static void ACCS_DicisionTake(void)
+static void BrakeAssist_DicisionTake(void)
 {
    
     cli();
